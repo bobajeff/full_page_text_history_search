@@ -1,3 +1,4 @@
+const fs = require('fs');
 const puppeteer_utilies = require('./init_puppeteer.js');
 
 (async () => {
@@ -7,9 +8,8 @@ var browser = await puppeteer_utilies.startPuppeteerSession();
 var getPageJson = async function (page) {
     return page.evaluate(()=>{
     function ready() {
-        var text_nodes; //[{level, element, text},...]
-        var text_nodes_concatenated = "";
-        
+        var pageJson; // {id , address, head, body}
+
         function getNodeContent(node){
           var contentString = "";
           contentString = allDescendants(node, 0, contentString);
@@ -26,17 +26,12 @@ var getPageJson = async function (page) {
                 var text = child.textContent;
                 if (/[^\s]/m.test(text)) //only add entries with visible text in them
                 {
-                  
-                  rendered_text = text;
-
-                  //text_nodes.push({level: node_depth, element: element, text: rendered_text});
-                  
                   //add spaces to seperate text elements if they aren't adjacent text nodes (seperated by elemental boundry)
                   if (!child.previousSibling)
                   {
                     contentString += ' ';
                   }
-                  contentString += rendered_text;
+                  contentString += text;
                 }
               }
             };
@@ -45,19 +40,20 @@ var getPageJson = async function (page) {
           return contentString;
         }
 
-        //text_nodes_concatenated = getNodeContent(document.documentElement);
+        var timestamp = Date.now();
+        var address = window.location.href;
         var head = getNodeContent(document.head);
         var body = getNodeContent(document.body);
         
 
-        text_nodes = 
+        pageJson = 
         {
-          id: null,
-          address: null,
+          id: timestamp,
+          address: address,
           head: head,
           body: body
         };
-        return text_nodes;
+        return pageJson;
     }
     return ready();
 })
@@ -82,7 +78,8 @@ page.on('load', async () => {
 
 //When browser closed do something with documents array
 browser.on('disconnected', async () => {
-  console.log(documents);
+  fs.writeFile('pagedata.json', JSON.stringify(documents), function (err) {
+  });
 })
 //await browser.close();
 })();
