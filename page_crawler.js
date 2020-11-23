@@ -1,33 +1,7 @@
-const test_page = 'http://0.0.0.0:8000/archive/1605905557.655183/blog.self.li/post/16366939413/how-to-convert-bookmarklet-to-chrome-extension.html';
-//const test_page = 'http://0.0.0.0:8000/archive/1605904857.309566/developer.android.com/studio/install.html';
-
 const fs = require('fs');
-const puppeteer = require('puppeteer');
 
-module.exports.getPageJson = async function(webpage) {
-  const browser = await puppeteer.launch({
-    "args": [
-      "--remote-debugging-port=9222",
-      '--remote-debugging-address=0.0.0.0'
-    ],
-    "headless": false,
-    "devtools": true,
-
-  });
-  const page = await browser.newPage();
-  await page.goto(webpage);
-  
-  function describe(jsHandle) {
-    return jsHandle.executionContext().evaluate(obj => {
-      // serialize |obj| however you want
-      return JSON.stringify(obj);
-    }, jsHandle);
-  }
-  
-  page.on('console', async msg => {
-    const args = await Promise.all(msg.args().map(arg => describe(arg)));
-    console.log(msg.text(), ...args);
-  });
+module.exports.getPageJson = async function(address, page) {
+  await page.goto(address);
 
   const text_nodes = await page.evaluate(() => {
     function ready() {
@@ -87,15 +61,9 @@ module.exports.getPageJson = async function(webpage) {
 
   });
   
-/* 
-  console.log(text_nodes);
-  fs.writeFile('pagedata.json', JSON.stringify(text_nodes), function (err) {
-  });
- */
   var timestamp = Date.now();
 
   text_nodes.id = timestamp,
-  text_nodes.address = webpage;
+  text_nodes.address = address;
   return text_nodes;
-  //await browser.close();
 };
