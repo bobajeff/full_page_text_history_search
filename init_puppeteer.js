@@ -11,7 +11,9 @@ module.exports.startPuppeteerSession = async function() {
     "devtools": true,
 
   });
+
+  const page = (await browser.pages())[0];
   //await browser.close();
-  return browser;
+  return {browser: browser, page: page};
 };
 

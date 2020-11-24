@@ -12,7 +12,6 @@ const MeiliSearch = require('meilisearch')
     apiKey: config.searchkey,
   })
 
-  const index = await client.createIndex('pages'); // If your index does not exist
-  // OR
-
+  const index = await client.createIndex('pages'); 
+ console.log(response);
 })()

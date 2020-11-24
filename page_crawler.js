@@ -1,13 +1,16 @@
 const fs = require('fs');
+const EventEmitter = require('events');
+class LoggerEmitter extends EventEmitter {}
 
-module.exports.getPageJson = async function(address, page) {
-  await page.goto(address);
+const puppeteer_utilies = require('./init_puppeteer.js');
 
-  const text_nodes = await page.evaluate(() => {
+loggerEvents = new LoggerEmitter();
+
+var getPageJson = async function (page) {
+    return page.evaluate(()=>{
     function ready() {
-        var text_nodes; //[{level, element, text},...]
-        var text_nodes_concatenated = "";
-        
+        var pageJson; // {id , address, head, body}
+
         function getNodeContent(node){
           var contentString = "";
           contentString = allDescendants(node, 0, contentString);
@@ -24,17 +27,12 @@ module.exports.getPageJson = async function(address, page) {
                 var text = child.textContent;
                 if (/[^\s]/m.test(text)) //only add entries with visible text in them
                 {
-                  
-                  rendered_text = text;
-
-                  //text_nodes.push({level: node_depth, element: element, text: rendered_text});
-                  
                   //add spaces to seperate text elements if they aren't adjacent text nodes (seperated by elemental boundry)
                   if (!child.previousSibling)
                   {
                     contentString += ' ';
                   }
-                  contentString += rendered_text;
+                  contentString += text;
                 }
               }
             };
@@ -43,27 +41,73 @@ module.exports.getPageJson = async function(address, page) {
           return contentString;
         }
 
-        //text_nodes_concatenated = getNodeContent(document.documentElement);
+        var timestamp = Date.now();
+        var address = window.location.href;
         var head = getNodeContent(document.head);
         var body = getNodeContent(document.body);
         
 
-        text_nodes = 
+        pageJson = 
         {
-          id: null,
-          address: null,
+          id: timestamp,
+          address: address,
           head: head,
           body: body
         };
-        return text_nodes;
+        return pageJson;
     }
     return ready();
+})
+}
 
-  });
-  
-  var timestamp = Date.now();
+logDocuments = async function() {
+const {browser, page} = await puppeteer_utilies.startPuppeteerSession();
 
-  text_nodes.id = timestamp,
-  text_nodes.address = address;
-  return text_nodes;
+//Get json object of page content
+global._meilisearch_documents = []
+
+//Get all the new pages opened in puppeteer
+browser.on('targetcreated', async(target) => {
+  if (target.type() === 'page') {
+    var newpage = await target.page();
+    newpage.on('load', async () => {
+      global._meilisearch_documents.push(await getPageJson(newpage));
+      loggerEvents.emit('document_created');
+    })
+  }
+});
+
+//Get the first page from starting puppeteer
+page.on('load', async () => {
+  global._meilisearch_documents.push(await getPageJson(page));
+  loggerEvents.emit('document_created');
+})
+global.pages_logged = 0;
+loggerEvents.on('document_created', () => {
+  global.pages_logged++;
+  if (global.pages_logged > 5)
+  {
+    loggerEvents.emit('documents_added');
+    global.pages_logged = 0;
+  }
+});
+
+setTimeout(() => {
+  if (global.pages_logged > 0 ){
+    loggerEvents.emit('documents_added');
+    global.pages_logged = 0;
+  }
+}, 120000)
+
+//When browser closed do something with documents array
+
+browser.on('disconnected', async () => {
+  loggerEvents.emit('documents_added');
+  global.pages_logged = 0;
+}) 
+
+loggerEvents.emit('pageready', page);
+//await browser.close();
 };
+
+module.exports = { loggerEvents, logDocuments};
