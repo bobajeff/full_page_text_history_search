@@ -1,10 +1,10 @@
 const fs = require('fs');
 const EventEmitter = require('events');
-class LoggerEmitter extends EventEmitter {}
+class CrawlerEmitter extends EventEmitter {}
 
 const puppeteer_utilies = require('./init_puppeteer.js');
 
-loggerEvents = new LoggerEmitter();
+crawlerEvents = new CrawlerEmitter();
 
 var getPageJson = async function (page) {
     return page.evaluate(()=>{
@@ -70,9 +70,20 @@ global._meilisearch_documents = []
 browser.on('targetcreated', async(target) => {
   if (target.type() === 'page') {
     var newpage = await target.page();
+    //might want to do this as it's faster
+    //so i can have something if I navigate to a new page too soon
+    newpage.on('DOMContentLoaded', async () => {
+      page_json = await getPageJson(newpage);
+      page_json._DOMContentLoaded = true;
+      global._meilisearch_documents.push();
+      crawlerEvents.emit('document_created');
+    })
+    //--------------------------------------------
     newpage.on('load', async () => {
-      global._meilisearch_documents.push(await getPageJson(newpage));
-      loggerEvents.emit('document_created');
+      page_json = await getPageJson(newpage);
+      page_json._load = true;
+      global._meilisearch_documents.push(page_json);
+      crawlerEvents.emit('document_created');
     })
   }
 });
@@ -80,34 +91,34 @@ browser.on('targetcreated', async(target) => {
 //Get the first page from starting puppeteer
 page.on('load', async () => {
   global._meilisearch_documents.push(await getPageJson(page));
-  loggerEvents.emit('document_created');
+  crawlerEvents.emit('document_created');
 })
 global.pages_logged = 0;
-loggerEvents.on('document_created', () => {
+crawlerEvents.on('document_created', () => {
   global.pages_logged++;
   if (global.pages_logged > 5)
   {
-    loggerEvents.emit('documents_added');
+    crawlerEvents.emit('documents_added');
     global.pages_logged = 0;
   }
 });
 
+//After 2 mins add documents to index
 setTimeout(() => {
   if (global.pages_logged > 0 ){
-    loggerEvents.emit('documents_added');
+    crawlerEvents.emit('documents_added');
     global.pages_logged = 0;
   }
 }, 120000)
 
-//When browser closed do something with documents array
-
+//When browser closed save add documents to index
 browser.on('disconnected', async () => {
-  loggerEvents.emit('documents_added');
+  crawlerEvents.emit('documents_added');
   global.pages_logged = 0;
 }) 
 
-loggerEvents.emit('pageready', page);
+crawlerEvents.emit('pageready', page);
 //await browser.close();
 };
 
-module.exports = { loggerEvents, logDocuments};
+module.exports = { crawlerEvents, logDocuments};
