@@ -6,7 +6,7 @@
       "port": "7700"
     },
     "puppeteer": {
-      "wsChromeEndpointurl": "ws://127.0.0.1:9222/devtools/browser/52572a86-ef72-4188-8dd8-412a75c4cffe"
+      "wsChromeEndpointurl": "ws://127.0.0.1:9222/devtools/browser/9e0f0264-3655-4691-a3e4-2782b13307cf"
     }
   }
 }
