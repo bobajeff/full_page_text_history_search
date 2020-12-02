@@ -23,13 +23,13 @@ browser.on('targetchanged', async (target) => {
         //     var cdp = await target.createCDPSession();
         //     runPageOperations(page, cdp);
         // });
-        page.on('load', async () => {
-            console.log('\n[load event]\n')
-            var cdp = await target.createCDPSession();
-            runPageOperations(page, cdp);
-        });
+        // page.on('load', async () => {
+        //     console.log('\n[load event]\n')
+        //     var cdp = await target.createCDPSession();
+        //     runPageOperations(page, cdp);
+        // });
 
-        //runPageOperations(page, cdp);
+        runPageOperations(page, cdp);
     }
 })
     
