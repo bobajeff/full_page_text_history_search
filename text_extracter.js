@@ -15,14 +15,23 @@ await evaluateMethod(page);
  };
 
  async function evaluateMethod(page){
-     //page.on('console', msg => console.log('PAGE LOG:', msg.text()));
-     var addToTextRandomString = crypto.randomBytes(20).toString('hex'); //create a random Function name
+     //function to get random integer
+     function getRandomInt(min, max) {
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        return Math.floor(Math.random() * (max - min) + min); 
+      }
+
+     var randomLength = await getRandomInt(20,50); //randomLength to feed the randomBytes length
+
+     var addToTextRandomString = await crypto.randomBytes(randomLength).toString('hex'); //create a random Function name
      await page.exposeFunction(addToTextRandomString, async text => {
          console.log('added text');
          console.log(text);
      });
 
-     var StringToEvaluate = (()=>{ //anonymous function to keep the global namespacee clean
+     //Turn function into string so I can do replace function name in evaluate space
+     var StringToEvaluate = (()=>{ //anonymous function to keep the global namespace clean
          function DOMoperations()
          {
              var addedTextNodes = []; //array for holding references to node that have been added
@@ -113,7 +122,7 @@ await evaluateMethod(page);
      }).toString();
      //console.log(StringToEvaluate);
 
-     await page.evaluate('(' + StringToEvaluate.replace(/addToText/gm, addToTextRandomString) + ')();');
+     await page.evaluate('(' + StringToEvaluate.replace(/addToText/gm, addToTextRandomString) + ')();'); 
  }
 
 async function captureSnapshotMethod(cdp){
