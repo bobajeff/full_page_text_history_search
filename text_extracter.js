@@ -24,13 +24,14 @@ await evaluateMethod(page);
 
      var randomLength = await getRandomInt(20,50); //randomLength to feed the randomBytes length
 
-     var addToTextRandomString = await crypto.randomBytes(randomLength).toString('hex'); //create a random Function name
+     var addToTextRandomString = await crypto.randomBytes(randomLength).toString('base64'); //create a random Function name
+     //function to recieve live text when processed by evaluate
      await page.exposeFunction(addToTextRandomString, async text => {
          console.log('added text');
          console.log(text);
      });
 
-     //Turn function into string so I can do replace function name in evaluate space
+     //Turn function into string so I can replace the function name in evaluate space
      var StringToEvaluate = (()=>{ //anonymous function to keep the global namespace clean
          function DOMoperations()
          {
@@ -54,7 +55,6 @@ await evaluateMethod(page);
                  if (!currentNode)
                  {
                      //Exit out of function
-                     // console.log('is this exiting?');
                      return contentString;
                  }
                  while(currentNode) {
@@ -81,32 +81,24 @@ await evaluateMethod(page);
              if (pagetext != ""){ //don't send back empty string
                  window['addToText'](pagetext);
              }
-             //  console.log('pagetext');
-             // console.log(pagetext);
              
              //observe changes to the DOM where text is added and send them to the addToText function
              const config = { childList: true, subtree: true, characterData: true, characterDataOldValue : true };
              const observer = new MutationObserver(function(mutations){
-                 //console.log(mutations);
                  var text = "";
-                 mutations.forEach(function(mutation, mutation_index){
-                     //console.log(mutation.type);
+                 mutations.forEach(function(mutation){
                      if (mutation.type == 'childList')
                      {
-                         mutation.addedNodes.forEach((node, node_index)=>{
+                         mutation.addedNodes.forEach((node)=>{
                              var addedtext = getTextFromDOMTree(node, String());
                              if (addedtext != "")
                              {
-                                 // console.log('mutation: ' + mutation_index + " node: " + node_index);
-                                 // console.log('addedtext');
-                                 // console.log(addedtext);
                                  text += addedtext;
                              }
                          });
                      }
                  })
-                 //console.log('mutation occured\n');
-                 if (text != "")
+                 if (text != "") //don't add empty strings
                  {
                      window['addToText'](text);
                  }
