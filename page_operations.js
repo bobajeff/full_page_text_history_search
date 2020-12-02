@@ -1,4 +1,7 @@
 const getpagetext = require('./text_extracter')
-module.exports = function(cdp){
-    getpagetext(cdp);
+/* 
+Takes and CDPSession and runs page operations with it.
+ */
+module.exports = function(page, cdp){
+    getpagetext(page, cdp);
 }

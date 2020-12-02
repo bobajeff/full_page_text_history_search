@@ -2,10 +2,11 @@ const puppeteer = require('puppeteer');
 const configuration = require('./configuration.json')
 const runPageOperations = require('./page_operations')
 
-const wsChromeEndpointurl = configuration['settings']['puppeteer']['wsChromeEndpointurl'];
+const getWebSocketDebuggerUrl = require('./getWebSocketDebuggerUrl');
 
 
 (async () => {
+    var wsChromeEndpointurl = await getWebSocketDebuggerUrl();
     const browser = await puppeteer.connect({
     browserWSEndpoint: wsChromeEndpointurl,
     defaultViewport: null
@@ -17,18 +18,18 @@ browser.on('targetchanged', async (target) => {
         let cdp = await target.createCDPSession();
         var page = await target.page();
         
-        page.on('DOMContentLoaded', async () => {
-            console.log('\n[DOMContentLoaded event]\n');
-            var cdp = await target.createCDPSession();
-            runPageOperations(cdp);
-        });
+        // page.on('DOMContentLoaded', async () => {
+        //     console.log('\n[DOMContentLoaded event]\n');
+        //     var cdp = await target.createCDPSession();
+        //     runPageOperations(page, cdp);
+        // });
         page.on('load', async () => {
             console.log('\n[load event]\n')
             var cdp = await target.createCDPSession();
-            runPageOperations(cdp);
+            runPageOperations(page, cdp);
         });
 
-        runPageOperations(cdp);
+        //runPageOperations(page, cdp);
     }
 })
     

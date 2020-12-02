@@ -1,0 +1,24 @@
+{
+  "name": "page_indexer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "page_indexer.js",
+  "dependencies": {
+    "meilisearch": "^0.16.1",
+    "puppeteer": "^5.5.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bobajeff/page_finder.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bobajeff/page_finder/issues"
+  },
+  "homepage": "https://github.com/bobajeff/page_finder#readme"
+}
