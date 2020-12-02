@@ -15,29 +15,29 @@ await evaluateMethod(page);
  };
 
  async function evaluateMethod(page){
-     //function to get random integer
+     //Function to get random integer
      function getRandomInt(min, max) {
         min = Math.ceil(min);
         max = Math.floor(max);
         return Math.floor(Math.random() * (max - min) + min); 
       }
 
-     var randomLength = await getRandomInt(20,50); //randomLength to feed the randomBytes length
+     var randomLength = await getRandomInt(20,50); //RandomLength to feed the crypto.randomBytes length
 
-     var addToTextRandomString = await crypto.randomBytes(randomLength).toString('base64'); //create a random Function name
-     //function to recieve live text when processed by evaluate
+     var addToTextRandomString = await crypto.randomBytes(randomLength).toString('base64'); //Create a random Function name
+     //Function to recieve live text when processed by evaluate
      await page.exposeFunction(addToTextRandomString, async text => {
          console.log('added text');
          console.log(text);
      });
 
      //Turn function into string so I can replace the function name in evaluate space
-     var StringToEvaluate = (()=>{ //anonymous function to keep the global namespace clean
+     var StringToEvaluate = (()=>{ //Anonymous function to keep the global namespace clean
          function DOMoperations()
          {
-             var addedTextNodes = []; //array for holding references to node that have been added
+             var addedTextNodes = []; //Array for holding references to nodes that have been added
              function getTextFromDOMTree (node, contentString) {
-                 //filter out 1) all the Script/NoScript/Style tags 2) any non-text nodes 3) any strings containing only whitespace characters 4) any non-visible text nodes 5) any nodes not added to the addedTextNodes array already
+                 //Filter out 1) all the Script/NoScript/Style tags 2) any non-text nodes 3) any strings containing only whitespace characters 4) any non-visible text nodes 5) any nodes not added to the addedTextNodes array already
                  var filter = {
                      acceptNode: function(n) {
                          return n && n.parentNode && n.parentNode.tagName != "SCRIPT" && n.parentNode.tagName != "NOSCRIPT" && n.parentNode.tagName != "STYLE" && n.nodeType == Node.TEXT_NODE && /[^\s]/m.test(n.textContent) && (!!n.parentNode.clientHeight || !!n.parentNode.clientWidth || !!n.parentNode.getClientRects().length) && !addedTextNodes.includes(n)
@@ -58,7 +58,7 @@ await evaluateMethod(page);
                      return contentString;
                  }
                  while(currentNode) {
-                     //check to see if node was already added (still have to run this here because every loop I add more and the filter is only run on the ones added prior)
+                     //Check to see if node was already added (still have to run this here because every loop I add more and the filter is only run on the ones added prior)
                      if (addedTextNodes.includes(currentNode))
                      {
                          //console.log('you already added this!');
@@ -77,12 +77,13 @@ await evaluateMethod(page);
                  return contentString;
              }
  
+             //Get text that's already loaded in the DOM and send to addToText function
              var pagetext = getTextFromDOMTree(document.body, String());
              if (pagetext != ""){ //don't send back empty string
                  window['addToText'](pagetext);
              }
              
-             //observe changes to the DOM where text is added and send them to the addToText function
+             //Observe changes to the DOM where text is added and send them to the addToText function
              const config = { childList: true, subtree: true, characterData: true, characterDataOldValue : true };
              const observer = new MutationObserver(function(mutations){
                  var text = "";
@@ -98,7 +99,7 @@ await evaluateMethod(page);
                          });
                      }
                  })
-                 if (text != "") //don't add empty strings
+                 if (text != "") //Don't add empty strings
                  {
                      window['addToText'](text);
                  }
@@ -112,7 +113,6 @@ await evaluateMethod(page);
              DOMoperations();
          }
      }).toString();
-     //console.log(StringToEvaluate);
 
      await page.evaluate('(' + StringToEvaluate.replace(/addToText/gm, addToTextRandomString) + ')();'); 
  }
