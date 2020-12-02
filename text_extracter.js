@@ -4,8 +4,6 @@ Takes a CDPSession and returns a string of text
 module.exports = async function (page, cdp){
     var pagetext = await evaluateMethod(page);
     console.log(pagetext);
-    //var pagetext = getDocumentMethod(cdp);
-    //console.log(pagetext);
 
     //var frameTree = await cdp.send('Page.captureSnapshot');
     //console.log(frameTree);
@@ -106,47 +104,6 @@ module.exports = async function (page, cdp){
         return pagetext;
     });
  }
-
- 
-async function getDocumentMethod(cdp){
-     var rootNode = await cdp.send('DOM.getDocument', { depth: -1, peirce: true });
-     //console.log(rootNode);
-     function getNodeContent(node){
-         var contentString = "";
-         contentString = allDescendants(node.root, contentString);
-         return contentString;
-     }
-     var stringArray = [];
-     function allDescendants(node, contentString){
-         var element = node.nodeName;
-         if (node.children != undefined)
-         {
-             node.children.forEach( (child, index) =>{
-                if(element != 'SCRIPT' && element != 'NOSCRIPT' && element != 'STYLE')
-                {
-                    if(child.nodeType == 3){
-                        var text = child.nodeValue;
-                        if (/[^\s]/m.test(text))
-                        {
-                            if(index == 0)
-                            {
-                                contentString += ' ';
-                            }
-                            contentString += text.replace(/\s+/g, " ");
-                            stringArray.push(text.replace(/\s+/g, " "));
-                        }
-                        //console.log(child.nodeValue);
-                    }
-                    contentString = allDescendants(child, contentString);
-                }
-             });
-         }
-         return contentString;
-        }
-        var text = getNodeContent(rootNode);
-        console.log(stringArray);
-     console.log(text);
-}
 
 async function captureSnapshotMethod(cdp){
     var document = await cdp.send('DOMSnapshot.captureSnapshot', { computedStyles: ['visibility'], includeDOMRects: true });
