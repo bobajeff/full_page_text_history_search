@@ -27,10 +27,10 @@ module.exports = async function (page, cdp){
 
         var addedTextNodes = []; //array for holding references to node that have been added
         function getTextFromDOMTree (node, contentString) {
-            //filter out 1) all the Script/NoScript/Style tags 2) any non-text nodes 3) any strings containing only whitespace characters 4) any non-visible text nodes
+            //filter out 1) all the Script/NoScript/Style tags 2) any non-text nodes 3) any strings containing only whitespace characters 4) any non-visible text nodes 5) any nodes not added to the addedTextNodes array already
             var filter = {
                 acceptNode: function(n) {
-                    return n && n.parentNode && n.parentNode.tagName != "SCRIPT" && n.parentNode.tagName != "NOSCRIPT" && n.parentNode.tagName != "STYLE" && n.nodeType == Node.TEXT_NODE && /[^\s]/m.test(n.textContent) && (!!n.parentNode.clientHeight || !!n.parentNode.clientWidth || !!n.parentNode.getClientRects().length)
+                    return n && n.parentNode && n.parentNode.tagName != "SCRIPT" && n.parentNode.tagName != "NOSCRIPT" && n.parentNode.tagName != "STYLE" && n.nodeType == Node.TEXT_NODE && /[^\s]/m.test(n.textContent) && (!!n.parentNode.clientHeight || !!n.parentNode.clientWidth || !!n.parentNode.getClientRects().length) && !addedTextNodes.includes(n)
                       ? NodeFilter.FILTER_ACCEPT
                       : NodeFilter.FILTER_REJECT;
                 }
@@ -49,7 +49,7 @@ module.exports = async function (page, cdp){
                 return contentString;
             }
             while(currentNode) {
-                //check to see if node was already added
+                //check to see if node was already added (still have to run this here because every loop I add more and the filter is only run on the ones added prior)
                 if (addedTextNodes.includes(currentNode))
                 {
                     //console.log('you already added this!');
