@@ -1,11 +1,10 @@
 const puppeteer = require('puppeteer');
-const configuration = require('./configuration.json')
 const runPageOperations = require('./page_operations')
 
 const getWebSocketDebuggerUrl = require('./getWebSocketDebuggerUrl');
 
 
-(async () => {
+module.exports = async function async () {
     var wsChromeEndpointurl = await getWebSocketDebuggerUrl();
     const browser = await puppeteer.connect({
     browserWSEndpoint: wsChromeEndpointurl,
@@ -41,4 +40,4 @@ targets['targetInfos'].forEach(async (target) => {
 console.log('attached targets:');
 console.log(attached_targets);
 
-})();
+};
