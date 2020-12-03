@@ -11,8 +11,8 @@ module.exports = async function (page, cdp){
      
  };
 
- //This function caputers text by injecting a javascript function into the page that traverses the DOM, send back the extracted text (through the ChromeDevTools Protocol)
- //It also checks for changes in the DOM and sends back the text as it's added to the DOM
+ //This function caputers text by injecting a javascript function into the page that send back the extracted text (through the ChromeDevTools Protocol)
+ //When the DOM nodes are changed it sends back only the text that's changed
  async function evaluateMethod(page){
      //Function to get random integer
      function getRandomInt(min, max) {
@@ -152,24 +152,9 @@ async function captureSnapshotMethod(page, cdp){
 
     async function SnapshotOperations(cdp)
     {
-        var document = await cdp.send('DOMSnapshot.captureSnapshot', { computedStyles: ['visibility'], includeDOMRects: true });
-        var {parentIndex, nodeType, nodeName, nodeValue, attributes} = document['documents'][0]['nodes'];//TODO: use attributes for the cases where DOMRects failes on detecting visibility
-        var {styles, nodeIndex, clientRects} = document['documents'][0]['layout'];
-        // console.log('strings');
-        // console.log(document['strings']);
-        //console.log(document['documents'][0]['layout']);
-        //console.log(styles[1]);
-        //console.log(document['documents'][0]);
-        // console.log('nodeValue');
-        // console.log(nodeValue);
-        // console.log('nodeName');
-        // console.log(nodeName);
-        // console.log('clientRects');
-        // console.log(clientRects);
-        // console.log('parentIndex');
-        // console.log(parentIndex);
-        // console.log('nodeIndex');
-        // console.log(nodeIndex);
+        var document = await cdp.send('DOMSnapshot.captureSnapshot', { computedStyles: [], includeDOMRects: true });
+        var {parentIndex, nodeType, nodeName, nodeValue} = document['documents'][0]['nodes'];//TODO: use attributes for the cases where DOMRects failes on detecting visibility
+        var {nodeIndex, clientRects} = document['documents'][0]['layout'];
         
         var visible = await Array(nodeName.length).fill(false); //create array to mirror nodeName array and populate it with true/false values
         
@@ -195,8 +180,10 @@ async function captureSnapshotMethod(page, cdp){
             
             var value_string = document['strings'][value_index];
             var parent_string = document['strings'][parent_string_index];
-            
-                
+
+            //make sure value string is not undefined
+            if (!!value_string)
+            {
                 //don't add script noscript or style nodes
                 if (parent_string != 'SCRIPT' && parent_string != 'NOSCRIPT' && parent_string != 'STYLE') {
                     if (node_type == 3){ // check if node is text type
@@ -205,11 +192,10 @@ async function captureSnapshotMethod(page, cdp){
                             if (visible[parent_index] == true)
                             {
                                 //replace many whitespace characters with one space as thats more likely 
-                                /* attribute_strings.filter(attribute_string => attribute_string == "aria-hidden");
-                                str_array.push('hidden'); */
                                 var text_sanitized = value_string.replace(/\s+/g, " ");
                                 str_array.push(text_sanitized);
                             }
+                        }
                     }
                 }
             }
