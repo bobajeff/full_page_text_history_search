@@ -17,17 +17,6 @@ browser.on('targetchanged', async (target) => {
         console.log('\n[targetchanged event]\n');
         let cdp = await target.createCDPSession();
         var page = await target.page();
-        
-        // page.on('DOMContentLoaded', async () => {
-        //     console.log('\n[DOMContentLoaded event]\n');
-        //     var cdp = await target.createCDPSession();
-        //     runPageOperations(page, cdp);
-        // });
-        // page.on('load', async () => {
-        //     console.log('\n[load event]\n')
-        //     var cdp = await target.createCDPSession();
-        //     runPageOperations(page, cdp);
-        // });
 
         runPageOperations(page, cdp);
     }

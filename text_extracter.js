@@ -4,16 +4,15 @@ var crypto = require("crypto");
 Takes a CDPSession and returns a string of text
  */
 module.exports = async function (page, cdp){
-await evaluateMethod(page);
+// await evaluateMethod(page);
  
-
-    //var frameTree = await cdp.send('Page.captureSnapshot');
-    //console.log(frameTree);
-    //captureSnapshotMethod(cdp);
+    captureSnapshotMethod(page, cdp);
 
      
  };
 
+ //This function caputers text by injecting a javascript function into the page that traverses the DOM, send back the extracted text (through the ChromeDevTools Protocol)
+ //It also checks for changes in the DOM and sends back the text as it's added to the DOM
  async function evaluateMethod(page){
      //Function to get random integer
      function getRandomInt(min, max) {
@@ -117,68 +116,104 @@ await evaluateMethod(page);
      await page.evaluate('(' + StringToEvaluate.replace(/addToText/gm, addToTextRandomString) + ')();'); 
  }
 
-async function captureSnapshotMethod(cdp){
-    var document = await cdp.send('DOMSnapshot.captureSnapshot', { computedStyles: ['visibility'], includeDOMRects: true });
-    var {parentIndex, nodeType, nodeName, nodeValue, attributes} = document['documents'][0]['nodes'];//TODO: use attributes for the cases where DOMRects failes on detecting visibility
-    var {styles, nodeIndex, clientRects} = document['documents'][0]['layout'];
-    // console.log('strings');
-    // console.log(document['strings']);
-    //console.log(document['documents'][0]['layout']);
-    //console.log(styles[1]);
-    //console.log(document['documents'][0]);
-    // console.log('nodeValue');
-    // console.log(nodeValue);
-    // console.log('nodeName');
-    // console.log(nodeName);
-    // console.log('clientRects');
-    // console.log(clientRects);
-    // console.log('parentIndex');
-    // console.log(parentIndex);
-    // console.log('nodeIndex');
-    // console.log(nodeIndex);
-    
-    var visible = await Array(nodeName.length).fill(false); //create array to mirror nodeName array and populate it with true/false values
+//This function captures text by taking a snapshot and extracting text from it
+//5 seconds after a response from the page, it will update the snapshot/text 
+async function captureSnapshotMethod(page, cdp){
 
-    //check clientRect property to judge if node is visible or not
-    await nodeIndex.forEach(async(node_index_value, itr) => {
-        var parent_client_rect_property = clientRects[itr];
-        if (parent_client_rect_property != undefined)
+    var response_itr = 0;
+    var last_snapshot_time = Date.now();
+    var waiting_for_time_out = false;
+    const interval = 5000; //5 seconds
+    await page.on('response', async () => {
+        console.log('[response event]');
+        console.log(response_itr++);
+        let this_time = Date.now();
+        var elapsed_time = this_time - last_snapshot_time;
+        if (!waiting_for_time_out) //if timer isn't set
         {
-            //                             width                                height
-            if (!!parent_client_rect_property[2] || !!parent_client_rect_property[3] || !!parent_client_rect_property.length){
-                visible[node_index_value] = true;
+            if(elapsed_time >= interval){ //wait untill elapsedtime is more or equal to interval
+                RunSnapshotOperations(cdp);
+            }
+            else { //if it's not start timer for when it'll meet the interval
+                waiting_for_time_out = true;
+                setTimeout(() => {
+                    RunSnapshotOperations(cdp);
+                    waiting_for_time_out = false;
+                }, interval - elapsed_time);
             }
         }
-
     });
-    
-    var str_array = [];
-    nodeType.forEach(async (node_type, itr) => {
-        var parent_index = parentIndex[itr];
-        let parent_string_index = nodeName[parent_index];
-        let value_index = nodeValue[itr];
+
+    async function RunSnapshotOperations(cdp)
+    {
+        await SnapshotOperations(cdp);
+        last_snapshot_time = Date.now();
+    }
+
+    async function SnapshotOperations(cdp)
+    {
+        var document = await cdp.send('DOMSnapshot.captureSnapshot', { computedStyles: ['visibility'], includeDOMRects: true });
+        var {parentIndex, nodeType, nodeName, nodeValue, attributes} = document['documents'][0]['nodes'];//TODO: use attributes for the cases where DOMRects failes on detecting visibility
+        var {styles, nodeIndex, clientRects} = document['documents'][0]['layout'];
+        // console.log('strings');
+        // console.log(document['strings']);
+        //console.log(document['documents'][0]['layout']);
+        //console.log(styles[1]);
+        //console.log(document['documents'][0]);
+        // console.log('nodeValue');
+        // console.log(nodeValue);
+        // console.log('nodeName');
+        // console.log(nodeName);
+        // console.log('clientRects');
+        // console.log(clientRects);
+        // console.log('parentIndex');
+        // console.log(parentIndex);
+        // console.log('nodeIndex');
+        // console.log(nodeIndex);
         
+        var visible = await Array(nodeName.length).fill(false); //create array to mirror nodeName array and populate it with true/false values
         
-        var value_string = document['strings'][value_index];
-        var parent_string = document['strings'][parent_string_index];
-        
-            
-            //don't add script noscript or style nodes
-            if (parent_string != 'SCRIPT' && parent_string != 'NOSCRIPT' && parent_string != 'STYLE') {
-                if (node_type == 3){ // check if node is text type
-                    if (/[^\s]/m.test(value_string))  // remove any tags that contain only whitespace
-                    {
-                        if (visible[parent_index] == true)
-                        {
-                            //replace many whitespace characters with one space as thats more likely 
-                            /* attribute_strings.filter(attribute_string => attribute_string == "aria-hidden");
-                            str_array.push('hidden'); */
-                            var text_sanitized = value_string.replace(/\s+/g, " ");
-                            str_array.push(text_sanitized);
-                        }
+        //check clientRect property to judge if node is visible or not
+        await nodeIndex.forEach(async(node_index_value, itr) => {
+            var parent_client_rect_property = clientRects[itr];
+            if (parent_client_rect_property != undefined)
+            {
+                //                             width                                height
+                if (!!parent_client_rect_property[2] || !!parent_client_rect_property[3] || !!parent_client_rect_property.length){
+                    visible[node_index_value] = true;
                 }
             }
-        }
-    });
-    console.log(str_array);
+        
+        });
+        
+        var str_array = [];
+        nodeType.forEach(async (node_type, itr) => {
+            var parent_index = parentIndex[itr];
+            let parent_string_index = nodeName[parent_index];
+            let value_index = nodeValue[itr];
+            
+            
+            var value_string = document['strings'][value_index];
+            var parent_string = document['strings'][parent_string_index];
+            
+                
+                //don't add script noscript or style nodes
+                if (parent_string != 'SCRIPT' && parent_string != 'NOSCRIPT' && parent_string != 'STYLE') {
+                    if (node_type == 3){ // check if node is text type
+                        if (/[^\s]/m.test(value_string))  // remove any tags that contain only whitespace
+                        {
+                            if (visible[parent_index] == true)
+                            {
+                                //replace many whitespace characters with one space as thats more likely 
+                                /* attribute_strings.filter(attribute_string => attribute_string == "aria-hidden");
+                                str_array.push('hidden'); */
+                                var text_sanitized = value_string.replace(/\s+/g, " ");
+                                str_array.push(text_sanitized);
+                            }
+                    }
+                }
+            }
+        });
+        console.log(str_array);
+    }
  }
