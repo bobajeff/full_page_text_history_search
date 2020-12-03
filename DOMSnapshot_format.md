@@ -42,6 +42,6 @@ Then you simply access it via the `parentIndex` like you do for the the tag name
 
 *eg. `extraArray[parentIndex[1]]`*
 
-If we need to find out if the previous node is the parent of the current one (meaning it's the first child) we can look at the previous index of `backendNodeId` and see if it matches the the the `parentIndex` of the `backendNodeId`.
+If we need to find out if the previous node is the parent of the current one (meaning it's the first child) we can look at the previous index of `backendNodeId` and see if it matches the `parentIndex` of the `backendNodeId`.
 
 *(So: `? backendNodeId[index - 1] == backendNodeId[parentIndex[index]]`)*

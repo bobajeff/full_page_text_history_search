@@ -172,7 +172,6 @@ async function captureSnapshotMethod(page, cdp){
         
         });
         
-        //var str_array = [];
         var text_content = "";
         nodeType.forEach(async (node_type, itr) => {
             var parent_index = parentIndex[itr];
