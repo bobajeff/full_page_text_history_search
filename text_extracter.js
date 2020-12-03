@@ -119,6 +119,7 @@ module.exports = async function (page, cdp){
 //This function captures text by taking a snapshot and extracting text from it
 //5 seconds after a response from the page, it will update the snapshot/text 
 async function captureSnapshotMethod(page, cdp){
+    RunSnapshotOperations(cdp);
 
     var response_itr = 0;
     var last_snapshot_time = Date.now();
@@ -153,9 +154,9 @@ async function captureSnapshotMethod(page, cdp){
     async function SnapshotOperations(cdp)
     {
         var document = await cdp.send('DOMSnapshot.captureSnapshot', { computedStyles: [], includeDOMRects: true });
-        var {parentIndex, nodeType, nodeName, nodeValue} = document['documents'][0]['nodes'];//TODO: use attributes for the cases where DOMRects failes on detecting visibility
+        var {parentIndex, nodeType, nodeName, nodeValue, backendNodeId} = document['documents'][0]['nodes'];//TODO: use attributes for the cases where DOMRects failes on detecting visibility
         var {nodeIndex, clientRects} = document['documents'][0]['layout'];
-        
+
         var visible = await Array(nodeName.length).fill(false); //create array to mirror nodeName array and populate it with true/false values
         
         //check clientRect property to judge if node is visible or not
@@ -171,7 +172,8 @@ async function captureSnapshotMethod(page, cdp){
         
         });
         
-        var str_array = [];
+        //var str_array = [];
+        var text_content = "";
         nodeType.forEach(async (node_type, itr) => {
             var parent_index = parentIndex[itr];
             let parent_string_index = nodeName[parent_index];
@@ -191,15 +193,21 @@ async function captureSnapshotMethod(page, cdp){
                         {
                             if (visible[parent_index] == true)
                             {
+                                var prefix = ""
+                                //check if first child
+                                if (itr != 0 && backendNodeId[itr -1] == backendNodeId[parent_index]) //if previous node equals parent node
+                                {
+                                    prefix = " ";
+                                }
                                 //replace many whitespace characters with one space as thats more likely 
-                                var text_sanitized = value_string.replace(/\s+/g, " ");
-                                str_array.push(text_sanitized);
+                                var text_sanitized = prefix + value_string.replace(/\s+/g, " ");
+                                text_content += text_sanitized;
                             }
                         }
                     }
                 }
             }
         });
-        console.log(str_array);
+        console.log(text_content);
     }
  }

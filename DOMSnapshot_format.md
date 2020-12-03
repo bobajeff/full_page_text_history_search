@@ -11,6 +11,9 @@
 
 **nodeValue** *array[ StringIndex ]*
 * Indexes into **DOMSnapshot['strings']**
+
+**backendNodeId** *array[ DOM.BackendNodeId ]*
+* Is just the Node's backendNodeId
 ---
 ### [DOMSnapshot.LayoutTreeSnapshot](https://chromedevtools.github.io/devtools-protocol/tot/DOMSnapshot/#type-LayoutTreeSnapshot)
 
@@ -38,3 +41,7 @@ One way to do it is to create a extra array by looping through the `nodeIndex` p
 Then you simply access it via the `parentIndex` like you do for the the tag name.
 
 *eg. `extraArray[parentIndex[1]]`*
+
+If we need to find out if the previous node is the parent of the current one (meaning it's the first child) we can look at the previous index of `backendNodeId` and see if it matches the the the `parentIndex` of the `backendNodeId`.
+
+*(So: `? backendNodeId[index - 1] == backendNodeId[parentIndex[index]]`)*
