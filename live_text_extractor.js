@@ -1,7 +1,7 @@
 var crypto = require("crypto");
 //This function caputers text by injecting a javascript function into the page that send back the extracted text (through the ChromeDevTools Protocol)
  //When the DOM nodes are changed it sends back only the text that's changed
- module.exports = async function(page, globalname){
+ module.exports = async function(page, document){
     //Function to get random integer
     function getRandomInt(min, max) {
        min = Math.ceil(min);
@@ -14,8 +14,8 @@ var crypto = require("crypto");
     var addToTextRandomString = await crypto.randomBytes(randomLength).toString('base64'); //Create a random Function name
     //Function to recieve live text when processed by evaluate
     await page.exposeFunction(addToTextRandomString, async text => {
-        global.app.pagedata[globalname].livetext += text;
-        global.app.events.emit('text_updated', globalname);
+        document.livetext += text;
+        global.app.events.emit('text_updated', document);
     });
 
     //Turn function into string so I can replace the function name in evaluate space
