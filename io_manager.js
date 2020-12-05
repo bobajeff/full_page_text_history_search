@@ -8,7 +8,7 @@ module.exports = async function () {
     var write_queue = [];
     var queue_checker_is_on = false;
     var write_timer;
-
+    
     global.app.events.on('text_updated', async (document) => {
         if (!write_queue.includes(document)) //don't add duplicates to the write queue 
         {
@@ -18,26 +18,36 @@ module.exports = async function () {
             }
         }
     } );
-
+    
     async function write_data(){
-        let document = write_queue[0];
-        let data = document;
-        let data_directory = await create_data_directory(document);
+        //prevent loop from writing the same document again if it's added after removal
+        var loop_itrations_left = write_queue.length; //any documents added after this is set will not be written
 
-        let screenshot_path = data_directory + '/' + 'screenshot.png';
-        document.screenshot_path = screenshot_path;
-        fs.writeFile(screenshot_path, data.screenshot_data, function (err) {
-            if (err) return console.log(err);
-        });
-        //write data to file;
-        console.log(data);
-        write_queue.shift(); //remove first item in array
-        if (write_queue.length == 0)
+        while (loop_itrations_left > 0)
+        {
+            var document = write_queue.shift(); //remove first item in array
+            loop_itrations_left--; //reduce iteration
+
+            let data = document;
+            let data_directory = await create_data_directory(document);
+
+            if (!!data.screenshot_data){ //add screenshot if it exists
+                let screenshot_path = data_directory + '/' + 'screenshot.png';
+                document.screenshot_path = screenshot_path;
+                fs.writeFile(screenshot_path, data.screenshot_data, function (err) {
+                    if (err) return console.log(err);
+                });
+            }
+            //write data to file;
+            console.log(data);
+        }
+        if (write_queue == 0) //turn on que
         {
             clearInterval(write_timer);
             queue_checker_is_on = false;
         }
     }
+
     async function check_queue(){
         queue_checker_is_on = true;
         write_timer = setInterval(write_data, write_interval);
