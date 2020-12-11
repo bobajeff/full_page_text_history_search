@@ -1,13 +1,12 @@
 const write_interval = 20000; //20 seconds 
 
+import get_document_from_meilisearch from './get_document_from_meilisearch.mjs';
+import connect_to_meilisearch from './connect_to_meilisearch.mjs';
+import {save_filter, overwrite, new_entry, discard} from './document_save_filter.mjs';
+
 const word_seperation_regex = /([^\S\r\n]+|[()[\]{}'"\r\n]|\b)/; //Regex used to split string into words
 
-module.exports = async function () {
-    // Remove: once migrated to es modules
-    const { default: get_document_from_meilisearch} = await import('./get_document_from_meilisearch.mjs');
-    const { default: connect_to_meilisearch} = await import('./connect_to_meilisearch.mjs');
-    const { save_filter: save_filter, overwrite, new_entry, discard } = await import("./document_save_filter.mjs");
-
+export default async function () {
     const client = await connect_to_meilisearch();
     const index = await client.getIndex('pages');
     var write_queue = [];
