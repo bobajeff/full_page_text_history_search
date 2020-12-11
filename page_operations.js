@@ -1,4 +1,4 @@
-import liveTextExtractor from './live_text_extractor.mjs';
+import liveTextExtractor from './live_text_extractor.js';
 
 const outter_func_rexp = /(^\(\) +=>{)|(^\(\)=> +{)|(^\(\) => +{)|(^\(\)=>{)|(}$)/g;
 

@@ -1,8 +1,8 @@
 const write_interval = 20000; //20 seconds 
 
-import get_document_from_meilisearch from './get_document_from_meilisearch.mjs';
-import connect_to_meilisearch from './connect_to_meilisearch.mjs';
-import {save_filter, overwrite, new_entry, discard} from './document_save_filter.mjs';
+import get_document_from_meilisearch from './get_document_from_meilisearch.js';
+import connect_to_meilisearch from './connect_to_meilisearch.js';
+import {save_filter, overwrite, new_entry, discard} from './document_save_filter.js';
 
 const word_seperation_regex = /([^\S\r\n]+|[()[\]{}'"\r\n]|\b)/; //Regex used to split string into words
 

@@ -1,5 +1,5 @@
 import MeiliSearch from 'meilisearch';
-import configuration from './configuration.mjs';
+import configuration from './configuration.js';
 
 const config = configuration.settings.meilisearch;
 const host = "http://" + config.address + ":" + config.port;

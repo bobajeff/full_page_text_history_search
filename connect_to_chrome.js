@@ -1,7 +1,7 @@
 import puppeteer from 'puppeteer';
 
-import getWebSocketDebuggerUrl from './getWebSocketDebuggerUrl.mjs';
-import runPageOperations from './page_operations.mjs';
+import getWebSocketDebuggerUrl from './getWebSocketDebuggerUrl.js';
+import runPageOperations from './page_operations.js';
 
 export default async function async () {
 

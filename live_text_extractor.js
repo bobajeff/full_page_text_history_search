@@ -1,4 +1,4 @@
-import randomString from './randomStringGenerator.mjs';
+import randomString from './randomStringGenerator.js';
 // const randomString = require('./randomStringGenerator');
 const outter_func_rexp = /(^\(\) +=>{)|(^\(\)=> +{)|(^\(\) => +{)|(^\(\)=>{)|(}$)/g;
 //This function caputers text by injecting a javascript function into the page that send back the extracted text (through the ChromeDevTools Protocol)
