@@ -1,4 +1,3 @@
-const connect_to_meilisearch = require('./connect_to_meilisearch');
 const write_interval = 20000; //20 seconds 
 
 const get_document_from_meilisearch = require('./get_document_from_meilisearch');
@@ -6,6 +5,8 @@ const get_document_from_meilisearch = require('./get_document_from_meilisearch')
 const word_seperation_regex = /([^\S\r\n]+|[()[\]{}'"\r\n]|\b)/; //Regex used to split string into words
 
 module.exports = async function () {
+    // Remove: once migrated to es modules
+    const { default: connect_to_meilisearch} = await import('./connect_to_meilisearch.mjs');
     const { save_filter: save_filter, overwrite, new_entry, discard } = await import("./document_save_filter.mjs");
 
     const client = await connect_to_meilisearch();

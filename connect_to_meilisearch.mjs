@@ -1,10 +1,10 @@
-const MeiliSearch = require('meilisearch');
-const configuration = require('./configuration.json')
+import MeiliSearch from 'meilisearch';
+import configuration from './configuration.mjs';
 
 const config = configuration.settings.meilisearch;
 const host = "http://" + config.address + ":" + config.port;
 
-module.exports = async function(){
+export default async function(){
     const client = await new MeiliSearch({
         host: host,
         apiKey: config.searchkey,
