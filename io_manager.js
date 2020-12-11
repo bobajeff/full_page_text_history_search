@@ -4,8 +4,6 @@ import get_document_from_meilisearch from './get_document_from_meilisearch.js';
 import connect_to_meilisearch from './connect_to_meilisearch.js';
 import {save_filter, overwrite, new_entry, discard} from './document_save_filter.js';
 
-const word_seperation_regex = /([^\S\r\n]+|[()[\]{}'"\r\n]|\b)/; //Regex used to split string into words
-
 export default async function () {
     const client = await connect_to_meilisearch();
     const index = await client.getIndex('pages');
@@ -50,8 +48,6 @@ export default async function () {
                 if (action == new_entry) // Write new entry
                 {
                     let data = await document;
-                    //REMOVE: Test to see if the word count goes over 1000
-                    console.log(document.livetext.split(word_seperation_regex).length);
                     
                     await documents.push({
                         id: data.timestamp, //make timestamp the id. Later I"ll be able update the timestamp but not the id

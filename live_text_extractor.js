@@ -1,6 +1,7 @@
 import randomString from './randomStringGenerator.js';
-// const randomString = require('./randomStringGenerator');
 const outter_func_rexp = /(^\(\) +=>{)|(^\(\)=> +{)|(^\(\) => +{)|(^\(\)=>{)|(}$)/g;
+const non_token_seperator_regex = /[^\s()'"\\\/:@_\-.;,!?]+/g; //Attemp to get tokens defined by meilisearch see: classify_separator at: https://github.com/meilisearch/MeiliSearch/blob/3423c0b246a2bacd12a16d38eaa640217e2eda1b/meilisearch-tokenizer/src/lib.rs
+
 //This function caputers text by injecting a javascript function into the page that send back the extracted text (through the ChromeDevTools Protocol)
  //When the DOM nodes are changed it sends back only the text that's changed
  export default async function(page, document){
@@ -9,6 +10,13 @@ const outter_func_rexp = /(^\(\) +=>{)|(^\(\)=> +{)|(^\(\) => +{)|(^\(\)=>{)|(}$
     var addToTextRandomString = await randomString(); //Create a random Function name
     //Function to recieve live text when processed by evaluate
     await page.exposeFunction(addToTextRandomString, async text => {
+
+        
+        let word_array = text.match(non_token_seperator_regex);
+        let word_count = word_array.length;
+        console.log(word_array);
+        console.log(word_count);
+        
         document.livetext += text;
         global.app.events.emit('text_updated', document);
     });
