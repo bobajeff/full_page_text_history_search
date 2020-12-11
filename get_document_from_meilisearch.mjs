@@ -1,4 +1,4 @@
-module.exports = async function (client, address) {
+export default async function (client, address) {
     return new Promise(async(resolve) => {
         const index = client.getIndex('pages');
         var searchfilter = {
