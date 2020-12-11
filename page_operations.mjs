@@ -1,11 +1,13 @@
-const liveTextExtractor = require('./live_text_extractor');
+import liveTextExtractor from './live_text_extractor.mjs';
+
 const outter_func_rexp = /(^\(\) +=>{)|(^\(\)=> +{)|(^\(\) => +{)|(^\(\)=>{)|(}$)/g;
 
 /* 
 Takes and CDPSession and runs page operations with it.
  */
 const page_blacklist = ["http://localhost:3000/"]
-module.exports = async function (page, cdp){
+export default async function (page, cdp){
+
     let address = await page.url();
     if (!page_blacklist.includes(address))
     {

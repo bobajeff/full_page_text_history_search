@@ -1,9 +1,10 @@
-const puppeteer = require('puppeteer');
-const runPageOperations = require('./page_operations')
+import puppeteer from 'puppeteer';
 
-const getWebSocketDebuggerUrl = require('./getWebSocketDebuggerUrl');
+import getWebSocketDebuggerUrl from './getWebSocketDebuggerUrl.mjs';
+import runPageOperations from './page_operations.mjs';
 
-module.exports = async function async () {
+export default async function async () {
+
     var wsChromeEndpointurl = await getWebSocketDebuggerUrl();
     const browser = await puppeteer.connect({
         browserWSEndpoint: wsChromeEndpointurl,
@@ -42,7 +43,7 @@ var targets = await cdp.send('Target.getTargets');
 console.log('targets:');
 console.log(targets['targetInfos'].length);
 
-attached_targets = 0;
+var attached_targets = 0;
 targets['targetInfos'].forEach(async (target) => {
     if (target['attached'] == true)
     {

@@ -1,4 +1,4 @@
-var http = require('http');
+import http from 'http';
 
 var webSocketDebuggerUrl = "";
 
@@ -12,7 +12,7 @@ var options = {
 
 
 
-module.exports = async function() {
+export default async function() {
     return await new Promise((resolve, reject) => {
         var request = http.request(options, (response, error) =>{
             var str = '';

@@ -1,8 +1,9 @@
-const randomString = require('./randomStringGenerator');
+import randomString from './randomStringGenerator.mjs';
+// const randomString = require('./randomStringGenerator');
 const outter_func_rexp = /(^\(\) +=>{)|(^\(\)=> +{)|(^\(\) => +{)|(^\(\)=>{)|(}$)/g;
 //This function caputers text by injecting a javascript function into the page that send back the extracted text (through the ChromeDevTools Protocol)
  //When the DOM nodes are changed it sends back only the text that's changed
- module.exports = async function(page, document){
+ export default async function(page, document){
 
 
     var addToTextRandomString = await randomString(); //Create a random Function name

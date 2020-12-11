@@ -4,11 +4,11 @@
 //c) Be discarded
 
 const overwrite = 1, new_entry = 2, discard = 3
-const Diff = require('diff');
+import {diffArrays, diffWords} from 'diff';
 const sentenceRegex = /(\S.+?[.!?])(?=\s+|$)/;
 
 
-module.exports = {overwrite, new_entry, discard, save_filter}
+export {overwrite, new_entry, discard, save_filter}
 
 
 async function save_filter(oldtext, newtext){
@@ -36,7 +36,7 @@ async function save_filter(oldtext, newtext){
             }
         };
         //diff string split into sentences since it's fastest
-        Diff.diffArrays(oldtext, newtext, (a, diff) => {
+        diffArrays(oldtext, newtext, (a, diff) => {
             // console.log(diff);
             const last_index = diff.length -1;
             var removed_total = 0;
@@ -71,9 +71,9 @@ async function save_filter(oldtext, newtext){
                             const index_of_last_array = removed_sentences.length -1;
                             var max_words_removed_in_sentence = 0;
                             var max_words_added_in_sentence = 0;
-                            for (sentence_index = 0; sentence_index <= index_of_last_array; sentence_index++)
+                            for (var sentence_index = 0; sentence_index <= index_of_last_array; sentence_index++)
                             {
-                                Diff.diffWords(removed_sentences[sentence_index], added_sentences[sentence_index], (a, word_diff) => {
+                                diffWords(removed_sentences[sentence_index], added_sentences[sentence_index], (a, word_diff) => {
                                     // console.log(word_diff);
                                     const last_word_index = word_diff.length -1;
                                     var removed_words = 0;

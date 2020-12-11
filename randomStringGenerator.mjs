@@ -1,6 +1,7 @@
-var crypto = require("crypto");
+import crypto from 'crypto';
+// var crypto = require("crypto");
 
-module.exports = async function(){
+export default async function(){
     return await new Promise(async(resolve, reject) => {
         //Function to get random integer
         function getRandomInt(min, max) {
