@@ -1,81 +1,119 @@
-const fs = require('fs');
-const fsPromises = fs.promises;
-const url = require('url');
-const forward_slash_at_beginning_or_end_of_string = /(^\/)|(\/$)/g; //regex to match forward slash at beginning or end of string
+const connect_to_meilisearch = require('./connect_to_meilisearch');
 const write_interval = 20000; //20 seconds 
 
+const get_document_from_meilisearch = require('./get_document_from_meilisearch');
+
+const { save_filter, overwrite, new_entry, discard } = require("./document_save_filter");
+const word_seperation_regex = /([^\S\r\n]+|[()[\]{}'"\r\n]|\b)/; //Regex used to split string into words
+
 module.exports = async function () {
+    const client = await connect_to_meilisearch();
+    const index = await client.getIndex('pages');
     var write_queue = [];
     var queue_checker_is_on = false;
-    var write_timer;
     
     global.app.events.on('text_updated', async (document) => {
         if (!write_queue.includes(document)) //don't add duplicates to the write queue 
         {
+            console.log("to the queue!")
             write_queue.push(document);
             if(!queue_checker_is_on){
                 check_queue();
             }
         }
     } );
+
+    async function getDocumentByAddress(address) {
+        return await get_document_from_meilisearch(client, address);
+
+    }
     
     async function write_data(){
         //prevent loop from writing the same document again if it's added after removal
         var loop_itrations_left = write_queue.length; //any documents added after this is set will not be written
+        var documents = [];
 
+        var loop_promises = [];
+        
         while (loop_itrations_left > 0)
         {
-            var document = write_queue.shift(); //remove first item in array
-            loop_itrations_left--; //reduce iteration
-
-            let data = document;
-            let data_directory = await create_data_directory(document);
-
-            if (!!data.screenshot_data){ //add screenshot if it exists
-                let screenshot_path = data_directory + '/' + 'screenshot.png';
-                document.screenshot_path = screenshot_path;
-                fs.writeFile(screenshot_path, data.screenshot_data, function (err) {
-                    if (err) return console.log(err);
-                });
-            }
+            var promise = new Promise(async(resolve)=>{
+                var document = await write_queue.shift(); //remove first item in array
+                
+                var old_document = await getDocumentByAddress(document.address);
+                // var old_document = undefined;
+                
+                var action = await (old_document === undefined) ? new_entry : await save_filter(old_document.livetext, document.livetext);
+                
+                await console.log('action');
+                await console.log(await(action == overwrite) ? "overwrite" : (action == new_entry) ? "new_entry" : "discard" );
+                if (action == new_entry) // Write new entry
+                {
+                    let data = await document;
+                    //REMOVE: Test to see if the word count goes over 1000
+                    console.log(document.livetext.split(word_seperation_regex).length);
+                    
+                    await documents.push({
+                        id: data.timestamp, //make timestamp the id. Later I"ll be able update the timestamp but not the id
+                        timestamp: data.timestamp,
+                        address: data.address,
+                        title: data.title,
+                        livetext: data.livetext
+                    });
+                    resolve();
+                }
+                if (action == discard) // Don't Write anything
+                {
+                    resolve();
+                    //do nothing!
+                }
+                if (action == overwrite) // Overwrite previous entry
+                {
+                    let data = document;
+                    
+                    await documents.push({
+                        id: old_document.id, //Old Id so it get overwritten instead of creating a new document
+                        timestamp: data.timestamp,
+                        address: data.address,
+                        title: data.title,
+                        livetext: data.livetext
+                    });
+                    resolve();
+                }
+                
+            });
+            
+            await loop_itrations_left--; //reduce iteration
+            loop_promises.push(promise);
+            
             //write data to file;
-            console.log(data);
+            // console.log(data);
         }
-        if (write_queue == 0) //turn on que
+        
+        await Promise.all(loop_promises);
+        //send to be indexed
+        if (!!documents.length){
+            // documents.forEach((doc)=>{console.log(doc)});
+            let response = await index.addDocuments(documents);
+            //REMOVE: Show Update Status 
+            let updateStatus = await client.getIndex('pages').getUpdateStatus(response.updateId);
+            console.log(updateStatus);
+        }
+
+        if (write_queue.length == 0) //turn on que
         {
-            clearInterval(write_timer);
             queue_checker_is_on = false;
+        }
+        else {
+            setTimeout(write_data, write_interval);
         }
     }
 
     async function check_queue(){
+        console.log('check queue');
         queue_checker_is_on = true;
-        write_timer = setInterval(write_data, write_interval);
+        setTimeout(write_data, write_interval);
+        // write_timer = setInterval(await write_data, write_interval);
     }
 
-    async function create_data_directory(document){
-        return await new Promise(async(resolve, reject) => {
-            let timestamp = document.timestamp;
-            let address = document.address;
-            let address_obj = await url.parse(address);
-            let {hostname, pathname, search, hash} = address_obj;
-    
-            pathname = await pathname.replace(forward_slash_at_beginning_or_end_of_string,'');    //make sure pathname doesn't begin or end in a forward slash
-            let data_directory = './data/site_data/' + hostname + '/' + timestamp + '/' + pathname;
-            data_directory = search ? data_directory + '/' + search : data_directory;
-            data_directory = hash ? data_directory + '/' + hash : data_directory;
-            
-            await fsPromises.access(data_directory, fs.constants.F_OK)
-            .catch(async() => {
-              await fs.mkdir(data_directory, { recursive: true }, function(err) {
-                if (err) {
-                  console.log(err)
-                  reject(err);
-                } else {
-                    resolve(data_directory);
-                }
-              })
-            });
-        })
-    }
 }

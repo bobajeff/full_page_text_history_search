@@ -4,8 +4,12 @@
   "description": "",
   "main": "page_indexer.js",
   "dependencies": {
+    "@babel/runtime": "^7.12.5",
+    "diff": "^5.0.0",
+    "level-rocksdb": "^4.0.0",
     "meilisearch": "^0.16.1",
-    "puppeteer": "^5.5.0"
+    "puppeteer": "^5.5.0",
+    "typesense": "^0.9.1"
   },
   "devDependencies": {},
   "scripts": {
