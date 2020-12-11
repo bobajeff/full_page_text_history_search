@@ -3,12 +3,12 @@
 //b) Create a new entry
 //c) Be discarded
 
-const overwrite = 1, new_entry = 2, discard = 3
+const overwrite = 1, new_entry = 2, discard = 3;
 import {diffArrays, diffWords} from 'diff';
 const sentenceRegex = /(\S.+?[.!?])(?=\s+|$)/;
 
 
-export {overwrite, new_entry, discard, save_filter}
+export {overwrite, new_entry, discard, save_filter};
 
 
 async function save_filter(oldtext, newtext){
