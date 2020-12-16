@@ -35,22 +35,27 @@ export default async function async () {
     //Make a test to see if the page target is already being handled 
     
     const pages = (await browser.pages());
-console.log('open pages:');
-console.log(pages.length);
+    console.log('open pages:');
+    console.log(pages.length);
 
-var cdp = await pages[0].target().createCDPSession();
-var targets = await cdp.send('Target.getTargets');
-console.log('targets:');
-console.log(targets['targetInfos'].length);
+    var cdp = await pages[0].target().createCDPSession();
+    var targets = await cdp.send('Target.getTargets');
+    console.log('targets:');
+    console.log(targets['targetInfos'].length);
 
-var attached_targets = 0;
-targets['targetInfos'].forEach(async (target) => {
-    if (target['attached'] == true)
-    {
-        attached_targets++;
-    }
-})
-console.log('attached targets:');
-console.log(attached_targets);
+    var attached_targets = 0;
+    targets['targetInfos'].forEach(async (target) => {
+        if (target['attached'] == true)
+        {
+            attached_targets++;
+        }
+    })
+    console.log('attached targets:');
+    console.log(attached_targets);
+
+    // Handle when the page gets closed suddenly
+    process.on('unhandledRejection', (reason) => {
+        console.log(reason.message);
+    });
 
 };

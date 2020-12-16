@@ -1,24 +1,25 @@
 import liveTextExtractor from './live_text_extractor.js';
+import crypto from 'crypto';
 
 const outter_func_rexp = /(^\(\) +=>{)|(^\(\)=> +{)|(^\(\) => +{)|(^\(\)=>{)|(}$)/g;
 
 /* 
 Takes and CDPSession and runs page operations with it.
  */
-const page_blacklist = ["http://localhost:3000/"]
-export default async function (page, cdp){
+const page_blacklist = ["http://localhost:3000/","chrome://new-tab-page/"]
+export default async function (page){
 
     let address = await page.url();
     if (!page_blacklist.includes(address))
     {
       let title = await page.title();
-  
-      let timestamp = await Date.now();
+      let set_id = await crypto.randomBytes(20).toString('base64'); //This needs to be unique per session
       var document = {
-          timestamp: timestamp,
+          set_id: set_id,
           address: address,
           title: title,
-          livetext: ""
+          text_strings: new Array(), //hold strings to be divided among series of documents
+          page: 1
       };
       
       async function updatePageData(){
@@ -53,6 +54,8 @@ export default async function (page, cdp){
   
       }).toString().replace(outter_func_rexp, "");
       //-----------------------------------------------------------------------------------------------------------
+      //DEBUG: puppeteer messages
+      // page.on('console', consoleObj => console.log(consoleObj.text()));
   
       page.evaluate('(()=>{' + pageEventHandlerString + '\n' + liveTextExtractorString + '})();');
       // captureSnapshotMethod(page, cdp);

@@ -1,115 +1,32 @@
-const write_interval = 20000; //20 seconds 
-
-import get_document_from_meilisearch from './get_document_from_meilisearch.js';
 import connect_to_meilisearch from './connect_to_meilisearch.js';
-import {save_filter, overwrite, new_entry, discard} from './document_save_filter.js';
+import divide_strings_into_documents from './divide_strings_into_documents.js';
+import write_to_file from './write_document_objects_test_files.js';
 
 export default async function () {
     const client = await connect_to_meilisearch();
     const index = await client.getIndex('pages');
-    var write_queue = [];
-    var queue_checker_is_on = false;
+    var handled_data = [];
     
-    global.app.events.on('text_updated', async (document) => {
-        if (!write_queue.includes(document)) //don't add duplicates to the write queue 
+    global.app.events.on('text_updated', handle_incomming_document_data);
+    async function handle_incomming_document_data(document_data){
+        if (!handled_data.includes(document_data)) 
         {
-            console.log("to the queue!")
-            write_queue.push(document);
-            if(!queue_checker_is_on){
-                check_queue();
-            }
-        }
-    } );
-
-    async function getDocumentByAddress(address) {
-        return await get_document_from_meilisearch(client, address);
-
-    }
-    
-    async function write_data(){
-        //prevent loop from writing the same document again if it's added after removal
-        var loop_itrations_left = write_queue.length; //any documents added after this is set will not be written
-        var documents = [];
-
-        var loop_promises = [];
-        
-        while (loop_itrations_left > 0)
-        {
-            var promise = new Promise(async(resolve)=>{
-                var document = await write_queue.shift(); //remove first item in array
-                
-                var old_document = await getDocumentByAddress(document.address);
-                // var old_document = undefined;
-                
-                var action = await (old_document === undefined) ? new_entry : await save_filter(old_document.livetext, document.livetext);
-                
-                await console.log('action');
-                await console.log(await(action == overwrite) ? "overwrite" : (action == new_entry) ? "new_entry" : "discard" );
-                if (action == new_entry) // Write new entry
-                {
-                    let data = await document;
-                    
-                    await documents.push({
-                        id: data.timestamp, //make timestamp the id. Later I"ll be able update the timestamp but not the id
-                        timestamp: data.timestamp,
-                        address: data.address,
-                        title: data.title,
-                        livetext: data.livetext
-                    });
-                    resolve();
-                }
-                if (action == discard) // Don't Write anything
-                {
-                    resolve();
-                    //do nothing!
-                }
-                if (action == overwrite) // Overwrite previous entry
-                {
-                    let data = document;
-                    
-                    await documents.push({
-                        id: old_document.id, //Old Id so it get overwritten instead of creating a new document
-                        timestamp: data.timestamp,
-                        address: data.address,
-                        title: data.title,
-                        livetext: data.livetext
-                    });
-                    resolve();
-                }
-                
-            });
-            
-            await loop_itrations_left--; //reduce iteration
-            loop_promises.push(promise);
-            
-            //write data to file;
-            // console.log(data);
-        }
-        
-        await Promise.all(loop_promises);
-        //send to be indexed
-        if (!!documents.length){
-            // documents.forEach((doc)=>{console.log(doc)});
-            let response = await index.addDocuments(documents);
-            //REMOVE: Show Update Status 
+            document_data.proccessing_data = true;
+            handled_data.push(document_data);
+            // await write_to_file(document_data);
+            let created_documents = await divide_strings_into_documents(document_data);
+            let response = await index.addDocuments(created_documents);
             let updateStatus = await client.getIndex('pages').getUpdateStatus(response.updateId);
             console.log(updateStatus);
+            document_data.proccessing_data = false;
         }
-
-        if (write_queue.length == 0) //turn on que
+        else 
         {
-            queue_checker_is_on = false;
+            if (!document_data.proccessing_data)
+            {
+                handled_data.splice(handled_data.indexOf(document_data),1);
+            }
         }
-        else {
-            setTimeout(write_data, write_interval);
-        }
-    }
-
-    async function check_queue(){
-        console.log('check queue');
-        queue_checker_is_on = true;
-        setTimeout(write_data, write_interval);
-        // write_timer = setInterval(await write_data, write_interval);
     }
 
 }
