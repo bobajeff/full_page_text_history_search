@@ -16,8 +16,8 @@ export default async function () {
             // await write_to_file(document_data);
             let created_documents = await divide_strings_into_documents(document_data);
             let response = await index.addDocuments(created_documents);
-            let updateStatus = await client.getIndex('pages').getUpdateStatus(response.updateId);
-            console.log(updateStatus);
+            let updateStatus = await index.getUpdateStatus(response.updateId);
+            console.log(updateStatus);//DEBUG:
             document_data.proccessing_data = false;
         }
         else 
