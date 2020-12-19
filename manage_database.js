@@ -7,19 +7,41 @@
 import {diffArrays} from 'diff';
 import divide_removed_strings_into_documents from "./divide_removed_strings_into_documents";
 const amount_of_strings_per_context = 5;
+const select_overlap_and_context_regex = /\u{200A}([^\u{200A}]*)\u{200A}|\u{2009}([^\u{2009}]*)\u{2009}/gu;
 const context_mark_character = '\u{2009}';//thin space whitespace character
 
-function get_document_sets_from_address(address)
+function get_document_sets_and_ids_from_address(index, address)
 {
-    var DocumentSets = {};
-    // pull documents from meilisearch and organized them into sets
-    return DocumentSets;
+    return new Promise(resolve=>{
+        // pull documents from meilisearch and organized them into sets
+        var document_sets = {};
+        index.search("", {filters: 'address = '+ '"' + address + '"'}).then((search)=>{
+            var ids = [];
+            for (hit of search.hits)
+            {
+                if (!document_set[hit.set_id])
+                {
+                    document_set[hit.set_id] = [];
+                }
+                document_set[hit.set_id].push(hit);
+                ids.push(hit.id);
+            }
+            resolve(document_sets, ids);
+        });
+    });
 }
 
 function get_strings_from_set(set)
 {
-    var text_strings = [];
-    //extract the strings from the document sets
+    //extract the strings and ids from the document sets
+    var text = '';
+    let page_ordered_set = set.sort((a,b) => a.page - b.page);
+    for (document of page_ordered_set)
+    {
+        text += document.text;
+    }
+    let text_minus_overlaps_and_context = text.replace(select_overlap_and_context_regex, '');
+    let text_strings = text_minus_overlaps_and_context.split(string_split_character);
 
     return text_strings;
 }
@@ -71,24 +93,32 @@ function prune_array_of_strings(old_strings, new_strings)
     return pruned_array_of_strings;
 }
 
-function prune_document_sets(new_strings, address)
+function prune_document_sets(new_strings, index, address)
 {
-    var sets = get_document_sets_from_address(address);
-    for (const document_set in sets)
-    {
-        var old_strings = get_strings_from_set(sets[document_set]);
-        var pruned_array_of_strings = prune_array_of_strings(old_strings, new_strings);
-        if (!!pruned_array_of_strings.length)
+    get_document_sets_and_ids_from_address(index, address).then((sets, ids)=>{
+        // TODO: filter out the new set id if running after new documents are added
+        var array_of_created_document_sets = [];
+        for (const document_set in sets)
         {
-            var document_data = {
-                set_id: document_set[0].set_id,
-                address: document_set[0].address,
-                title: document_set[0].title,
-                text_strings: pruned_array_of_strings, //hold strings to be divided among series of documents
-                page: 1
-            };
-            divide_removed_strings_into_documents(document_data);
+            var old_strings = get_strings_from_set(sets[document_set]);
+            var pruned_array_of_strings = prune_array_of_strings(old_strings, new_strings);
+            if (!!pruned_array_of_strings.length)
+            {
+                var document_data = {
+                    timestamp: document_set[0].timestamp,
+                    set_id: document_set[0].set_id,
+                    address: document_set[0].address,
+                    title: document_set[0].title,
+                    text_strings: pruned_array_of_strings, //hold strings to be divided among series of documents
+                    page: 1
+                };
+                array_of_created_document_sets.push(divide_removed_strings_into_documents(document_data));
+            }
         }
-
-    }
+        Promise.all(array_of_created_document_sets).then((array_of_created_document_sets)=>{
+            var documents = [].concat(...array_of_created_document_sets);//flatten array
+            index.deleteDocuments(ids);
+            index.addDocuments(documents);
+        });
+    });
 }

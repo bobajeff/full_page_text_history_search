@@ -12,11 +12,10 @@ var previous_text_strings = [];
 
 function create_document(text, document_data)
 {
-    var timestamp = Date.now();
     var document = {
         id: document_data.id_to_use,
         set_id: document_data.set_id,
-        timestamp: timestamp,
+        timestamp: document_data.timestamp,
         address: document_data.address,
         title: document_data.title,
         text: text,

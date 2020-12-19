@@ -16,6 +16,7 @@ export default async function (page){
       let set_id = await crypto.randomBytes(20).toString('base64'); //This needs to be unique per session
       var document = {
           set_id: set_id,
+          timestamp: Date.now(),
           address: address,
           title: title,
           text_strings: new Array(), //hold strings to be divided among series of documents
