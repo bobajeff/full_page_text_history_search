@@ -14,12 +14,13 @@ function create_document(text, document_data)
 {
     var timestamp = Date.now();
     var document = {
+        document_type: 'pruned',
         id: document_data.id_to_use,
         set_id: document_data.set_id,
         timestamp: timestamp,
         address: document_data.address,
         title: document_data.title,
-        text: text,
+        removed_text: text,
         page: document_data.page,
     };
     documents.push(document);
