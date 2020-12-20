@@ -1,8 +1,12 @@
-// I need to remove duplicate data before the database grows too big
-    // it never shrinks so this has to happen regualarly
-// I'm thinking right after I add a set (of documents)
+// Remove duplicate data regularly so the database grows too big on drive (it never shrinks)
+// After a set (of documents) is added
     //check them against the ones in the database for that address
         //including the pruned sets
+
+// TODO: What about duplicate documents or strings that are in the non_current sets
+    // If I check some these documents against the current set it'll only remove the stuff that the current set has
+    // What about non-current sets that share strings with other non-current sets
+        //(I only want one copy of those strings per address)
 import {diffArrays} from 'diff';
 import divide_strings_into_documents from "./divide_strings_into_documents.js";
 const amount_of_strings_per_context = 5;
@@ -95,7 +99,7 @@ function prune_array_of_strings(old_strings, new_strings)
 
 }
 
-function prune_document_sets(new_strings, new_set_id, index, address)
+function prune_index(new_strings, new_set_id, index, address)
 {
     get_document_sets_and_ids_from_address(index, address).then(({sets, ids})=>{
         // console.log('sets before del');//DEBUG:
@@ -146,4 +150,4 @@ function prune_document_sets(new_strings, new_set_id, index, address)
     });
 }
 
-export default prune_document_sets;
+export default prune_index;
