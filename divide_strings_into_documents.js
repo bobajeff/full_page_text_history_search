@@ -13,6 +13,7 @@ var previous_text_strings = [];
 function create_document(text, document_data)
 {
     var document = {
+        document_type: document_data.document_type,
         id: document_data.id_to_use,
         set_id: document_data.set_id,
         timestamp: document_data.timestamp,

@@ -1,6 +1,7 @@
 import connect_to_meilisearch from './connect_to_meilisearch.js';
 import divide_strings_into_documents from './divide_strings_into_documents.js';
 import write_to_file from './write_document_objects_test_files.js';
+import prune_index from './prune_index.js';
 
 export default async function () {
     const client = await connect_to_meilisearch();
@@ -16,8 +17,9 @@ export default async function () {
             // await write_to_file(document_data);
             let created_documents = await divide_strings_into_documents(document_data);
             let response = await index.addDocuments(created_documents);
+            prune_index(document_data.text_strings, document_data.set_id, index, document_data.address);
             let updateStatus = await index.getUpdateStatus(response.updateId);
-            console.log(updateStatus);//DEBUG:
+            // console.log(updateStatus);//DEBUG:
             document_data.proccessing_data = false;
         }
         else 
