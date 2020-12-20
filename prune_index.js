@@ -115,10 +115,10 @@ function prune_document_sets(new_strings, new_set_id, index, address)
                         {
                             var document_data = {
                                 document_type: 'removed_text',
-                                timestamp: document_set[0].timestamp,
-                                set_id: document_set[0].set_id,
-                                address: document_set[0].address,
-                                title: document_set[0].title,
+                                timestamp: sets[document_set][0].timestamp,
+                                set_id: sets[document_set][0].set_id,
+                                address: sets[document_set][0].address,
+                                title: sets[document_set][0].title,
                                 text_strings: pruned_array_of_strings, //hold strings to be divided among series of documents
                                 page: 1
                             };
