@@ -9,6 +9,7 @@ const string_split_character = '\u{200B}';//zerowidth whitespace character
 const overlap_mark_character = '\u{200A}';//hairspace whitespace character
 var documents = [];
 var previous_text_strings = [];
+var ids = [];
 
 function create_document(text, document_data)
 {
@@ -23,6 +24,7 @@ function create_document(text, document_data)
         page: document_data.page,
     };
     documents.push(document);
+    ids.push(document_data.id_to_use);
 }
 
 function divide_single_string_into_documents(textString, token_count, callback)
@@ -94,7 +96,7 @@ export default async function (document_data){
         //remove last character (which is a string split character)
         create_document(left_over_text.slice(0, -1), document_data); //put the rest in a new document
         document_data.last_document = documents[documents.length -1]; //set last document for next run
-        resolve(documents);
+        resolve({documents: documents, ids: ids});
 
     });
 

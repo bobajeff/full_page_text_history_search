@@ -10,17 +10,19 @@
 import {diffArrays} from 'diff';
 import divide_strings_into_documents from "./divide_strings_into_documents.js";
 const amount_of_strings_per_context = 5;
-const select_overlap_and_context_regex = /\u{200A}([^\u{200A}]*)\u{200A}|\u{2009}([^\u{2009}]*)\u{2009}/gu;
-const context_mark_character = '\u{2009}';//thin space whitespace character
+const select_overlap_regex = /\u{200A}([^\u{200A}]*)\u{200A}/gu;
 const string_split_character = '\u{200B}'; //select text blocks with overlap marker (whitespace character)
 
-function get_document_sets_and_ids_from_address(index, address)
+import './utilities.js';
+
+function get_document_sets_and_ids_from_address(index, address, new_set_id)
 {
     return new Promise(resolve=>{
-        // pull documents from meilisearch and organized them into sets
         index.search("", {filters: 'address = "' + address + '"'}).then((search)=>{
             var document_sets = {};
             var ids = [];
+            var set_data = [];
+            // pull documents from meilisearch and organized them into sets
             for (const hit of search.hits)
             {
                 if (!document_sets[hit.set_id])
@@ -30,7 +32,45 @@ function get_document_sets_and_ids_from_address(index, address)
                 document_sets[hit.set_id].push(hit);
                 ids.push(hit.id);
             }
-            resolve({sets: document_sets, ids:ids});
+            delete document_sets[new_set_id];//remove new set because we don't want to prune that
+            //Get the strings and document_data for each set 
+            for (const set in document_sets)
+            {
+                var strings = get_strings_from_set(document_sets[set]);
+                var document_data = {
+                    document_type: 'removed_text',
+                    timestamp: document_sets[set][0].timestamp,
+                    set_id: document_sets[set][0].set_id,
+                    address: document_sets[set][0].address,
+                    title: document_sets[set][0].title,
+                    page: 1
+                };
+                if (!!document_sets[set][0].checked)
+                {
+                    document_data.checked = true;
+                }
+                set_data.push({strings: strings, document_data: document_data});
+            }
+            set_data.sort((a,b) => b.document_data.timestamp - a.document_data.timestamp); // sort set by date (decending?)
+            // TODO: go through sets and find the the sets that aren't checked
+                //If they aren't checked compare against older sets
+            // first go backwards through array
+            for (let [index, set] of set_data.reverse_entries())
+            {
+                //if not checked and not the last index iterate forward (towards the older sets)
+                if (!set.document_data.checked && index != (set_data.length -1))
+                {
+                    var new_strings = set.strings;
+                    for (let set of set_data.start_at(index + 1))
+                    {
+                        prune_array_of_strings(set.strings, new_strings).then((pruned_strings)=>{
+                            set.strings = pruned_strings;
+                        });
+                    }
+                    set.document_data.checked = true;
+                }
+            }
+            resolve({set_data: set_data, ids:ids});
         });
     });
 }
@@ -44,8 +84,8 @@ function get_strings_from_set(set)
     {
         text += document.text;
     }
-    let text_minus_overlaps_and_context = text.replace(select_overlap_and_context_regex, '');
-    let text_strings = text_minus_overlaps_and_context.split(string_split_character);
+    let text_minus_overlap = text.replace(select_overlap_regex, '');
+    let text_strings = text_minus_overlap.split(string_split_character);
     return text_strings;
 }
 
@@ -66,8 +106,6 @@ function prune_array_of_strings(old_strings, new_strings)
                     if (need_following_text)
                     {
                         let context = ((part.value.length -1) >= amount_of_strings_per_context) ? part.value.slice(0, amount_of_strings_per_context) : part.value;
-                        context[0] = context_mark_character + context[0];
-                        context[context.length -1] = context[context.length -1] + context_mark_character;
                         pruned_array_of_strings = pruned_array_of_strings.concat(context);
                         need_following_text = false; //Set to false after adding text
                     }
@@ -80,8 +118,6 @@ function prune_array_of_strings(old_strings, new_strings)
                     if (!!previous_strings.length)
                     {
                         let context = ((previous_strings.length -1) >= amount_of_strings_per_context) ? previous_strings.slice(-amount_of_strings_per_context) : previous_strings;
-                        context[0] = context_mark_character + context[0];
-                        context[context.length -1] = context[context.length -1] + context_mark_character;
                         let removed_strings = part.value;
                         pruned_array_of_strings = pruned_array_of_strings.concat(context, removed_strings);
                     }
@@ -99,34 +135,21 @@ function prune_array_of_strings(old_strings, new_strings)
 
 }
 
-function prune_index(new_strings, new_set_id, index, address)
+function prune_index(new_strings, new_set_id, new_ids, index, address)
 {
-    get_document_sets_and_ids_from_address(index, address).then(({sets, ids})=>{
-        // console.log('sets before del');//DEBUG:
-        // console.log(Object.keys(sets).length);//DEBUG:
-        delete sets[new_set_id];//remove new set because we don't want to prune that
-        // console.log('sets after del');//DEBUG:
-        // console.log(Object.keys(sets).length);//DEBUG:
+    get_document_sets_and_ids_from_address(index, address, new_set_id).then(({set_data, ids})=>{
         var loop_promises = [];
         var documents = [];
-        for (const document_set in sets)
+        for (const set of set_data)
         {
             loop_promises.push(
                 new Promise(resolve=>{
-                    var old_strings = get_strings_from_set(sets[document_set]);
-                    prune_array_of_strings(old_strings, new_strings).then(pruned_array_of_strings=>{
+                    prune_array_of_strings(set.text_strings, new_strings).then(pruned_array_of_strings=>{
                         if (!!pruned_array_of_strings.length)
                         {
-                            var document_data = {
-                                document_type: 'removed_text',
-                                timestamp: sets[document_set][0].timestamp,
-                                set_id: sets[document_set][0].set_id,
-                                address: sets[document_set][0].address,
-                                title: sets[document_set][0].title,
-                                text_strings: pruned_array_of_strings, //hold strings to be divided among series of documents
-                                page: 1
-                            };
-                            divide_strings_into_documents(document_data).then(created_documents=>{
+                            var document_data = set.document_data;
+                            document_data.text_strings = pruned_array_of_strings; //hold strings to be divided among series of documents
+                            divide_strings_into_documents(document_data).then(({documents: created_documents})=>{
                                 documents = documents.concat(created_documents);
                                 resolve();
                             });
@@ -141,8 +164,18 @@ function prune_index(new_strings, new_set_id, index, address)
 
         }
         Promise.all(loop_promises).then(()=>{
+            //update the new set to show it's been check against older sets
+            for (const id of new_ids)
+            {
+                documents.push(
+                    {
+                        id: id,
+                        checked: true
+                    }
+                );
+            }
             index.deleteDocuments(ids);
-            index.addDocuments(documents).then(updateStatus=>{
+            index.updateDocuments(documents).then(updateStatus=>{
                 // console.log(updateStatus); //DEBUG:
             });
             

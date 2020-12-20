@@ -15,9 +15,9 @@ export default async function () {
             document_data.proccessing_data = true;
             handled_data.push(document_data);
             // await write_to_file(document_data);
-            let created_documents = await divide_strings_into_documents(document_data);
+            let {documents: created_documents, ids: new_ids} = await divide_strings_into_documents(document_data);
             let response = await index.addDocuments(created_documents);
-            prune_index(document_data.text_strings, document_data.set_id, index, document_data.address);
+            prune_index(document_data.text_strings, document_data.set_id, new_ids, index, document_data.address);
             let updateStatus = await index.getUpdateStatus(response.updateId);
             // console.log(updateStatus);//DEBUG:
             document_data.proccessing_data = false;
