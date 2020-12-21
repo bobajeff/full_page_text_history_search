@@ -52,28 +52,96 @@ function get_document_sets_and_ids_from_address(index, address, new_set_id)
                 set_data.push({strings: strings, document_data: document_data});
             }
             set_data.sort((a,b) => b.document_data.timestamp - a.document_data.timestamp); // sort set by date (decending?)
-            // TODO: go through sets and find the the sets that aren't checked
-                //If they aren't checked compare against older sets
-            // first go backwards through array
-            for (let [index, set] of set_data.reverse_entries())
-            {
-                //if not checked and not the last index iterate forward (towards the older sets)
-                if (!set.document_data.checked && index != (set_data.length -1))
-                {
-                    var new_strings = set.strings;
-                    for (let set of set_data.start_at(index + 1))
-                    {
-                        prune_array_of_strings(set.strings, new_strings).then((pruned_strings)=>{
-                            set.strings = pruned_strings;
-                        });
-                    }
-                    set.document_data.checked = true;
-                }
-            }
-            resolve({set_data: set_data, ids:ids});
+            prune_sets(set_data).then(()=>{
+                resolve({set_data: set_data, ids:ids});
+            });
         });
     });
 }
+
+async function prune_sets(set_data)
+{
+    return new Promise(resolve=>{
+        // Go through sets and find the the sets that aren't checked
+            //If they aren't checked compare against older sets
+        // first go backwards through array
+        var compare_older_set_tasks = [];
+        for (let [index, set] of set_data.reverse_entries())
+        {
+            compare_older_set_tasks.push(
+                new Promise(resolve=>{
+                    //if not checked and not the last index iterate forward (towards the older sets)
+                    if (!set.document_data.checked && index != (set_data.length -1))
+                    {
+                        var prune_tasks = [];
+                        //Make sure we run these in order
+                        let this_prune_task = await new Promise(resolve=>{
+                            var new_strings = set.strings;
+                            let loop_promises;
+                            if (!!prune_tasks.length) //If there is a promise from last loop
+                            {
+                                prune_tasks[prune_tasks.length -1].then(()=>{
+                                    for (let set of set_data.start_at(index + 1))
+                                    {
+                                        loop_promises.push(
+                                            new Promise(resolve=>{
+                                                let pruned_strings = await prune_array_of_strings(set.strings, new_strings);
+                                                set.strings = pruned_strings;
+                                                resolve();
+                                            })
+                                        );
+                                    }
+                                });
+                            }
+                            else //If no promise
+                            {
+                                for (let set of set_data.start_at(index + 1))
+                                {
+                                    loop_promises.push(
+                                        new Promise(resolve=>{
+                                            let pruned_strings = await prune_array_of_strings(set.strings, new_strings);
+                                            set.strings = pruned_strings;
+                                            resolve();
+                                        })
+                                    );
+                                }
+                            }
+                            await Promise.all(loop_promises);
+                            set.document_data.checked = true;
+                            resolve();
+                        });
+                        resolve();
+                        prune_tasks[prune_tasks.length -1] = this_prune_task;
+                    }
+                    else
+                    {
+                        resolve();
+                    }
+                })
+            )
+        }
+        await Promise.all(compare_older_set_tasks);
+        // Go through the sets normally and check against the new_strings
+        let loop_promises;
+        for (const set of set_data)
+        {
+            loop_promises.push(
+                new Promise(resolve=>{
+                   let pruned_array_of_strings = await prune_array_of_strings(set.strings, new_strings);
+                    if (!!pruned_array_of_strings.length)
+                    {
+                        set.document_data.text_strings = pruned_array_of_strings;
+                        resolve();
+                    }
+                })
+            );
+        }
+        await Promise.all(loop_promises);
+        resolve();
+    });
+
+}
+
 
 function get_strings_from_set(set)
 {
