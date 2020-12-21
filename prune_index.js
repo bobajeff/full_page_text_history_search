@@ -83,7 +83,7 @@ function prune_index(new_strings, new_set_id, new_ids, index, address)
 
 async function prune_sets(set_data, new_strings)
 {
-    return new Promise(async resolve=>{
+    return (async ()=>{
         // Go through sets and find the the sets that aren't checked
             //If they aren't checked compare against older sets
         // first go backwards through array
@@ -91,13 +91,13 @@ async function prune_sets(set_data, new_strings)
         for (let [index, set] of set_data.reverse_entries())
         {
             compare_older_set_tasks.push(
-                new Promise(async resolve=>{
+                (async ()=>{
                     //if not checked and not the last index iterate forward (towards the older sets)
                     if (!set.document_data.checked && index != (set_data.length -1))
                     {
                         var prune_tasks = [];
                         //Make sure we run these in order
-                        let this_prune_task = await new Promise(async resolve=>{
+                        let this_prune_task = await (async ()=>{
                             var strings_to_compare_with = set.strings;
                             let loop_promises = [];
                             if (!!prune_tasks.length) //If there is a promise from last loop
@@ -106,11 +106,11 @@ async function prune_sets(set_data, new_strings)
                                     for (let set of set_data.start_at(index + 1))
                                     {
                                         loop_promises.push(
-                                            new Promise(async resolve=>{
+                                            (async ()=>{
                                                 let pruned_strings = await prune_array_of_strings(set.strings, strings_to_compare_with);
                                                 set.strings = pruned_strings;
-                                                resolve();
-                                            })
+                                                return;
+                                            })()
                                         );
                                     }
                                 });
@@ -120,26 +120,26 @@ async function prune_sets(set_data, new_strings)
                                 for (let set of set_data.start_at(index + 1))
                                 {
                                     loop_promises.push(
-                                        new Promise(async resolve=>{
+                                        (async ()=>{
                                             let pruned_strings = await prune_array_of_strings(set.strings, strings_to_compare_with);
                                             set.strings = pruned_strings;
-                                            resolve();
-                                        })
+                                            return;
+                                        })()
                                     );
                                 }
                             }
                             await Promise.all(loop_promises);
                             set.document_data.checked = true;
-                            resolve();
-                        });
-                        resolve();
-                        prune_tasks[prune_tasks.length -1] = this_prune_task;
+                            return;
+                        })();
+                        prune_tasks.push(this_prune_task);
+                        return;
                     }
                     else
                     {
-                        resolve();
+                        return;
                     }
-                })
+                })()
             )
         }
         await Promise.all(compare_older_set_tasks);
@@ -149,20 +149,20 @@ async function prune_sets(set_data, new_strings)
         for (const set of set_data)
         {
             loop_promises.push(
-                new Promise(async resolve=>{
+                (async ()=>{
                    let pruned_array_of_strings = await prune_array_of_strings(set.strings, new_strings);
                     if (!!pruned_array_of_strings.length)
                     {
                         set.document_data.text_strings = pruned_array_of_strings;
                         document_data_array.push(set.document_data);
-                        resolve();
                     }
-                })
+                    return;
+                })()
             );
         }
         await Promise.all(loop_promises);
-        resolve(document_data_array);
-    });
+        return document_data_array;
+    })();
 
 }
 
