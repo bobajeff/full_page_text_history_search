@@ -74,7 +74,7 @@ function prune_index(new_strings, new_set_id, new_ids, index, address)
                 }
                 index.deleteDocuments(ids);
                 index.updateDocuments(documents).then(updateStatus=>{
-                    // console.log(updateStatus); //DEBUG:
+                    console.log(updateStatus); //DEBUG:
                 });
             });
         });
@@ -83,7 +83,7 @@ function prune_index(new_strings, new_set_id, new_ids, index, address)
 
 async function prune_sets(set_data, new_strings)
 {
-    return new Promise(resolve=>{
+    return new Promise(async resolve=>{
         // Go through sets and find the the sets that aren't checked
             //If they aren't checked compare against older sets
         // first go backwards through array
@@ -91,22 +91,22 @@ async function prune_sets(set_data, new_strings)
         for (let [index, set] of set_data.reverse_entries())
         {
             compare_older_set_tasks.push(
-                new Promise(resolve=>{
+                new Promise(async resolve=>{
                     //if not checked and not the last index iterate forward (towards the older sets)
                     if (!set.document_data.checked && index != (set_data.length -1))
                     {
                         var prune_tasks = [];
                         //Make sure we run these in order
-                        let this_prune_task = await new Promise(resolve=>{
+                        let this_prune_task = await new Promise(async resolve=>{
                             var strings_to_compare_with = set.strings;
-                            let loop_promises;
+                            let loop_promises = [];
                             if (!!prune_tasks.length) //If there is a promise from last loop
                             {
-                                prune_tasks[prune_tasks.length -1].then(()=>{
+                                prune_tasks[prune_tasks.length -1].then(async ()=>{
                                     for (let set of set_data.start_at(index + 1))
                                     {
                                         loop_promises.push(
-                                            new Promise(resolve=>{
+                                            new Promise(async resolve=>{
                                                 let pruned_strings = await prune_array_of_strings(set.strings, strings_to_compare_with);
                                                 set.strings = pruned_strings;
                                                 resolve();
@@ -120,7 +120,7 @@ async function prune_sets(set_data, new_strings)
                                 for (let set of set_data.start_at(index + 1))
                                 {
                                     loop_promises.push(
-                                        new Promise(resolve=>{
+                                        new Promise(async resolve=>{
                                             let pruned_strings = await prune_array_of_strings(set.strings, strings_to_compare_with);
                                             set.strings = pruned_strings;
                                             resolve();
@@ -144,12 +144,12 @@ async function prune_sets(set_data, new_strings)
         }
         await Promise.all(compare_older_set_tasks);
         // Go through the sets normally and check against the new_strings
-        let loop_promises;
+        let loop_promises = [];
         var document_data_array = [];
         for (const set of set_data)
         {
             loop_promises.push(
-                new Promise(resolve=>{
+                new Promise(async resolve=>{
                    let pruned_array_of_strings = await prune_array_of_strings(set.strings, new_strings);
                     if (!!pruned_array_of_strings.length)
                     {
