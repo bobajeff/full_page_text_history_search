@@ -13,70 +13,68 @@ import './utilities.js';
 
 function prune_index(new_strings, new_set_id, new_ids, index, address)
 {
-    return new Promise(resolve=>{
-        index.search("", {filters: 'address = "' + address + '"'}).then((search)=>{
-            var document_sets = {};
-            var ids = [];
-            var set_data = [];
-            // pull documents from meilisearch and organized them into sets
-            for (const hit of search.hits)
+    index.search("", {filters: 'address = "' + address + '"'}).then((search)=>{
+        var document_sets = {};
+        var ids = [];
+        var set_data = [];
+        // pull documents from meilisearch and organized them into sets
+        for (const hit of search.hits)
+        {
+            if (!document_sets[hit.set_id])
             {
-                if (!document_sets[hit.set_id])
-                {
-                    document_sets[hit.set_id] = [];
-                }
-                document_sets[hit.set_id].push(hit);
-                ids.push(hit.id);
+                document_sets[hit.set_id] = [];
             }
-            delete document_sets[new_set_id];//remove new set because we don't want to prune that
-            //Get the strings and document_data for each set 
-            for (const set in document_sets)
+            document_sets[hit.set_id].push(hit);
+            ids.push(hit.id);
+        }
+        delete document_sets[new_set_id];//remove new set because we don't want to prune that
+        //Get the strings and document_data for each set 
+        for (const set in document_sets)
+        {
+            var strings = get_strings_from_set(document_sets[set]);
+            var document_data = {
+                document_type: 'removed_text',
+                timestamp: document_sets[set][0].timestamp,
+                set_id: document_sets[set][0].set_id,
+                address: document_sets[set][0].address,
+                title: document_sets[set][0].title,
+                page: 1
+            };
+            if (!!document_sets[set][0].checked)
             {
-                var strings = get_strings_from_set(document_sets[set]);
-                var document_data = {
-                    document_type: 'removed_text',
-                    timestamp: document_sets[set][0].timestamp,
-                    set_id: document_sets[set][0].set_id,
-                    address: document_sets[set][0].address,
-                    title: document_sets[set][0].title,
-                    page: 1
-                };
-                if (!!document_sets[set][0].checked)
-                {
-                    document_data.checked = true;
-                }
-                set_data.push({strings: strings, document_data: document_data});
+                document_data.checked = true;
             }
-            set_data.sort((a,b) => b.document_data.timestamp - a.document_data.timestamp); // sort set by date (decending?)
-            prune_sets(set_data, new_strings).then((document_data_array)=>{
-                var documents = [];
-                let document_creation_tasks = [];
-                for (document_data of document_data_array)
+            set_data.push({strings: strings, document_data: document_data});
+        }
+        set_data.sort((a,b) => b.document_data.timestamp - a.document_data.timestamp); // sort set by date (decending?)
+        prune_sets(set_data, new_strings).then((document_data_array)=>{
+            var documents = [];
+            let document_creation_tasks = [];
+            for (document_data of document_data_array)
+            {
+                document_creation_tasks.push(
+                    new Promise(resolve=>{
+                        divide_strings_into_documents(document_data).then(({documents: created_documents})=>{
+                            documents = documents.concat(created_documents);
+                            resolve();
+                        });
+                    })
+                );
+            }
+            Promise.all(document_creation_tasks).then(()=>{
+                //update the new set to show it's been check against older sets
+                for (const id of new_ids)
                 {
-                    document_creation_tasks.push(
-                        new Promise(resolve=>{
-                            divide_strings_into_documents(document_data).then(({documents: created_documents})=>{
-                                documents = documents.concat(created_documents);
-                                resolve();
-                            });
-                        })
+                    documents.push(
+                        {
+                            id: id,
+                            checked: true
+                        }
                     );
                 }
-                Promise.all(document_creation_tasks).then(()=>{
-                    //update the new set to show it's been check against older sets
-                    for (const id of new_ids)
-                    {
-                        documents.push(
-                            {
-                                id: id,
-                                checked: true
-                            }
-                        );
-                    }
-                    index.deleteDocuments(ids);
-                    index.updateDocuments(documents).then(updateStatus=>{
-                        // console.log(updateStatus); //DEBUG:
-                    });
+                index.deleteDocuments(ids);
+                index.updateDocuments(documents).then(updateStatus=>{
+                    // console.log(updateStatus); //DEBUG:
                 });
             });
         });
