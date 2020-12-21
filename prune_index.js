@@ -3,10 +3,6 @@
     //check them against the ones in the database for that address
         //including the pruned sets
 
-// TODO: What about duplicate documents or strings that are in the non_current sets
-    // If I check some these documents against the current set it'll only remove the stuff that the current set has
-    // What about non-current sets that share strings with other non-current sets
-        //(I only want one copy of those strings per address)
 import {diffArrays} from 'diff';
 import divide_strings_into_documents from "./divide_strings_into_documents.js";
 const amount_of_strings_per_context = 5;
@@ -15,7 +11,7 @@ const string_split_character = '\u{200B}'; //select text blocks with overlap mar
 
 import './utilities.js';
 
-function get_document_sets_and_ids_from_address(index, address, new_set_id)
+function prune_index(new_strings, new_set_id, new_ids, index, address)
 {
     return new Promise(resolve=>{
         index.search("", {filters: 'address = "' + address + '"'}).then((search)=>{
@@ -52,14 +48,42 @@ function get_document_sets_and_ids_from_address(index, address, new_set_id)
                 set_data.push({strings: strings, document_data: document_data});
             }
             set_data.sort((a,b) => b.document_data.timestamp - a.document_data.timestamp); // sort set by date (decending?)
-            prune_sets(set_data).then(()=>{
-                resolve({set_data: set_data, ids:ids});
+            prune_sets(set_data, new_strings).then((document_data_array)=>{
+                var documents = [];
+                let document_creation_tasks = [];
+                for (document_data of document_data_array)
+                {
+                    document_creation_tasks.push(
+                        new Promise(resolve=>{
+                            divide_strings_into_documents(document_data).then(({documents: created_documents})=>{
+                                documents = documents.concat(created_documents);
+                                resolve();
+                            });
+                        })
+                    );
+                }
+                Promise.all(document_creation_tasks).then(()=>{
+                    //update the new set to show it's been check against older sets
+                    for (const id of new_ids)
+                    {
+                        documents.push(
+                            {
+                                id: id,
+                                checked: true
+                            }
+                        );
+                    }
+                    index.deleteDocuments(ids);
+                    index.updateDocuments(documents).then(updateStatus=>{
+                        // console.log(updateStatus); //DEBUG:
+                    });
+                });
             });
         });
     });
 }
 
-async function prune_sets(set_data)
+async function prune_sets(set_data, new_strings)
 {
     return new Promise(resolve=>{
         // Go through sets and find the the sets that aren't checked
@@ -76,7 +100,7 @@ async function prune_sets(set_data)
                         var prune_tasks = [];
                         //Make sure we run these in order
                         let this_prune_task = await new Promise(resolve=>{
-                            var new_strings = set.strings;
+                            var strings_to_compare_with = set.strings;
                             let loop_promises;
                             if (!!prune_tasks.length) //If there is a promise from last loop
                             {
@@ -85,7 +109,7 @@ async function prune_sets(set_data)
                                     {
                                         loop_promises.push(
                                             new Promise(resolve=>{
-                                                let pruned_strings = await prune_array_of_strings(set.strings, new_strings);
+                                                let pruned_strings = await prune_array_of_strings(set.strings, strings_to_compare_with);
                                                 set.strings = pruned_strings;
                                                 resolve();
                                             })
@@ -99,7 +123,7 @@ async function prune_sets(set_data)
                                 {
                                     loop_promises.push(
                                         new Promise(resolve=>{
-                                            let pruned_strings = await prune_array_of_strings(set.strings, new_strings);
+                                            let pruned_strings = await prune_array_of_strings(set.strings, strings_to_compare_with);
                                             set.strings = pruned_strings;
                                             resolve();
                                         })
@@ -123,6 +147,7 @@ async function prune_sets(set_data)
         await Promise.all(compare_older_set_tasks);
         // Go through the sets normally and check against the new_strings
         let loop_promises;
+        var document_data_array = [];
         for (const set of set_data)
         {
             loop_promises.push(
@@ -131,13 +156,14 @@ async function prune_sets(set_data)
                     if (!!pruned_array_of_strings.length)
                     {
                         set.document_data.text_strings = pruned_array_of_strings;
+                        document_data_array.push(set.document_data);
                         resolve();
                     }
                 })
             );
         }
         await Promise.all(loop_promises);
-        resolve();
+        resolve(document_data_array);
     });
 
 }
@@ -201,54 +227,6 @@ function prune_array_of_strings(old_strings, new_strings)
         });
     });
 
-}
-
-function prune_index(new_strings, new_set_id, new_ids, index, address)
-{
-    get_document_sets_and_ids_from_address(index, address, new_set_id).then(({set_data, ids})=>{
-        var loop_promises = [];
-        var documents = [];
-        for (const set of set_data)
-        {
-            loop_promises.push(
-                new Promise(resolve=>{
-                    prune_array_of_strings(set.text_strings, new_strings).then(pruned_array_of_strings=>{
-                        if (!!pruned_array_of_strings.length)
-                        {
-                            var document_data = set.document_data;
-                            document_data.text_strings = pruned_array_of_strings; //hold strings to be divided among series of documents
-                            divide_strings_into_documents(document_data).then(({documents: created_documents})=>{
-                                documents = documents.concat(created_documents);
-                                resolve();
-                            });
-                        }
-                        else
-                        {
-                            resolve();
-                        }
-                    });
-                })
-            );
-
-        }
-        Promise.all(loop_promises).then(()=>{
-            //update the new set to show it's been check against older sets
-            for (const id of new_ids)
-            {
-                documents.push(
-                    {
-                        id: id,
-                        checked: true
-                    }
-                );
-            }
-            index.deleteDocuments(ids);
-            index.updateDocuments(documents).then(updateStatus=>{
-                // console.log(updateStatus); //DEBUG:
-            });
-            
-        });
-    });
 }
 
 export default prune_index;
