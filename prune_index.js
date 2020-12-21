@@ -88,6 +88,7 @@ async function prune_sets(set_data, new_strings)
             //If they aren't checked compare against older sets
         // first go backwards through array
         var compare_older_set_tasks = [];
+        var prune_tasks = [];
         for (let [index, set] of set_data.reverse_entries())
         {
             compare_older_set_tasks.push(
@@ -95,9 +96,8 @@ async function prune_sets(set_data, new_strings)
                     //if not checked and not the last index iterate forward (towards the older sets)
                     if (!set.document_data.checked && index != (set_data.length -1))
                     {
-                        var prune_tasks = [];
                         //Make sure we run these in order
-                        let this_prune_task = await (async ()=>{
+                        prune_tasks.push((async ()=>{
                             var strings_to_compare_with = set.strings;
                             let loop_promises = [];
                             if (!!prune_tasks.length) //If there is a earlier prune task
@@ -120,8 +120,7 @@ async function prune_sets(set_data, new_strings)
                             await Promise.all(loop_promises);
                             set.document_data.checked = true;
                             return;
-                        })();
-                        prune_tasks.push(this_prune_task);
+                        })());
                         return;
                     }
                     else
