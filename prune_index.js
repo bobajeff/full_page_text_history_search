@@ -102,27 +102,16 @@ async function prune_sets(set_data, new_strings)
                             let loop_promises = [];
                             if (!!prune_tasks.length) //If there is a promise from last loop
                             {
-                                prune_tasks[prune_tasks.length -1].then(async ()=>{
-                                    for (let set of set_data.start_at(index + 1))
-                                    {
-                                        loop_promises.push(
-                                            (async ()=>{
-                                                let pruned_strings = await prune_array_of_strings(set.strings, strings_to_compare_with);
-                                                set.strings = pruned_strings;
-                                                return;
-                                            })()
-                                        );
-                                    }
-                                });
-                            }
-                            else //If no promise
-                            {
+                                await prune_tasks[prune_tasks.length -1]; //Wait for the last prune task to complete first
                                 for (let set of set_data.start_at(index + 1))
                                 {
                                     loop_promises.push(
                                         (async ()=>{
                                             let pruned_strings = await prune_array_of_strings(set.strings, strings_to_compare_with);
-                                            set.strings = pruned_strings;
+                                            if (!!pruned_strings.length)
+                                            {
+                                                set.strings = pruned_strings;
+                                            }
                                             return;
                                         })()
                                     );
