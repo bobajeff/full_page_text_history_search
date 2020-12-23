@@ -11,77 +11,77 @@ const string_split_character = '\u{200B}'; //select text blocks with overlap mar
 
 import './utilities.js';
 
-function prune_index(new_strings, new_set_id, new_ids, index, address)
+function prune_index(index, address)
 {
-    index.search("", {filters: 'address = "' + address + '"'}).then((search)=>{
-        var document_sets = {};
-        var ids = [];
-        var set_data = [];
-        // pull documents from meilisearch and organized them into sets
-        for (const hit of search.hits)
-        {
-            if (!document_sets[hit.set_id])
-            {
-                document_sets[hit.set_id] = [];
+    return new Promise(resolve=>{
+        index.search("", {filters: 'address = "' + address + '"'}).catch(reason=>{}).then((search)=>{
+            if (!search.hits.length)
+            {//exit it address not found
+                resolve();
             }
-            document_sets[hit.set_id].push(hit);
-            ids.push(hit.id);
-        }
-        delete document_sets[new_set_id];//remove new set because we don't want to prune that
-        //Get the strings and document_data for each set 
-        for (const set in document_sets)
-        {
-            var strings = get_strings_from_set(document_sets[set]);
-            var document_data = {
-                document_type: 'removed_text',
-                timestamp: document_sets[set][0].timestamp,
-                set_id: document_sets[set][0].set_id,
-                address: document_sets[set][0].address,
-                title: document_sets[set][0].title,
-                page: 1
-            };
-            if (!!document_sets[set][0].checked)
+            var document_sets = {};
+            var ids = [];
+            var set_data = [];
+            // pull documents from meilisearch and organized them into sets
+            for (const hit of search.hits)
             {
-                document_data.checked = true;
-            }
-            set_data.push({strings: strings, document_data: document_data});
-        }
-        set_data.sort((a,b) => b.document_data.timestamp - a.document_data.timestamp); // sort set by date (decending?)
-        prune_sets(set_data, new_strings).then((document_data_array)=>{
-            var documents = [];
-            let document_creation_tasks = [];
-            for (document_data of document_data_array)
-            {
-                document_creation_tasks.push(
-                    new Promise(resolve=>{
-                        divide_strings_into_documents(document_data).then(({documents: created_documents})=>{
-                            documents = documents.concat(created_documents);
-                            resolve();
-                        });
-                    })
-                );
-            }
-            Promise.all(document_creation_tasks).then(()=>{
-                //update the new set to show it's been check against older sets
-                for (const id of new_ids)
+                if (!document_sets[hit.set_id])
                 {
-                    documents.push(
-                        {
-                            id: id,
-                            checked: true
-                        }
+                    document_sets[hit.set_id] = [];
+                }
+                document_sets[hit.set_id].push(hit);
+                ids.push(hit.id);
+            }
+            //Get the strings and document_data for each set 
+            for (const set in document_sets)
+            {
+                var strings = get_strings_from_set(document_sets[set]);
+                var document_data = {
+                    document_type: 'removed_text',
+                    timestamp: document_sets[set][0].timestamp,
+                    set_id: document_sets[set][0].set_id,
+                    address: document_sets[set][0].address,
+                    title: document_sets[set][0].title,
+                    page: 1
+                };
+                if (!!document_sets[set][0].checked)
+                {
+                    document_data.checked = true;
+                }
+                set_data.push({strings: strings, document_data: document_data});
+            }
+            set_data.sort((a,b) => b.document_data.timestamp - a.document_data.timestamp); // sort set by date (decending?)
+            prune_sets(set_data).then((document_data_array)=>{
+                var documents = [];
+                let document_creation_tasks = [];
+                for (document_data of document_data_array)
+                {
+                    document_creation_tasks.push(
+                        new Promise(resolve=>{
+                            divide_strings_into_documents(document_data).then(({documents: created_documents})=>{
+                                documents = documents.concat(created_documents);
+                                resolve();
+                            });
+                        })
                     );
                 }
-                index.deleteDocuments(ids);
-                index.updateDocuments(documents).then(updateStatus=>{
-                    console.log(updateStatus); //DEBUG:
+                Promise.all(document_creation_tasks).then(()=>{
+                    //update the new set to show it's been check against older sets
+                    index.deleteDocuments(ids);
+                    // console.log(documents);
+                    index.updateDocuments(documents).then(response=>{
+                        resolve();
+                        // index.getUpdateStatus(response.updateId).then(updateStatus=>{
+                        //     console.log(updateStatus); //DEBUG:
+                        // });
+                    });
                 });
             });
         });
     });
 }
 
-async function prune_sets(set_data, new_strings)
+async function prune_sets(set_data)
 {
     return (async ()=>{
         // Go through sets and find the the sets that aren't checked
@@ -131,22 +131,19 @@ async function prune_sets(set_data, new_strings)
             )
         }
         await Promise.all(compare_older_set_tasks);
-        // Go through the sets normally and check against the new_strings
+        // Finish creating the documents_data objects return them
         let loop_promises = [];
         var document_data_array = [];
         for (const set of set_data)
         {
-            loop_promises.push(
-                (async ()=>{
-                   let pruned_array_of_strings = await prune_array_of_strings(set.strings, new_strings);
-                    if (!!pruned_array_of_strings.length)
-                    {
-                        set.document_data.text_strings = pruned_array_of_strings;
-                        document_data_array.push(set.document_data);
-                    }
-                    return;
-                })()
-            );
+            loop_promises.push((async()=>{
+                if (!!set.strings)
+                {
+                    set.document_data.text_strings = set.strings;
+                    document_data_array.push(set.document_data);
+                }
+                return;
+            }))
         }
         await Promise.all(loop_promises);
         return document_data_array;
