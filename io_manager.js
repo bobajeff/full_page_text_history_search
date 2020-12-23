@@ -8,8 +8,7 @@ export default async function () {
     const client = await connect_to_meilisearch();
     const index = await client.getIndex('pages');
     var handled_data = [];
-    var timeout;
-    //try to resume the address being pruned from last time
+    //Resume prunning the addresses from last time if they didn't get done
     var logs_of_addresses_being_pruned = (await fs.readFile('logs/addresses_to_prune.log', {encoding: 'utf8'}).catch(reason=>{}));
     var addresses_being_pruned = [];
     // var address_to_prune_log_file = await fs.createWriteStream('logs/addresses_to_prune.log', {flags: 'w', encoding: 'utf8'});
@@ -20,54 +19,42 @@ export default async function () {
         cleanup_running = true;
         run_index_cleanup();
     }
-
-    // TODO: Use this to rund handle_incomming_document_data when no text_updated event has fired
-    var resetTimeOut = function(callback, ms){
-            timeout = setTimeout(callback, ms);
-            resetTimeOut = function()
-            {
-                clearTimeout(timeout);
-                setTimeout(callback, ms);
-            }
-    }
     
     global.app.events.on('text_updated', handle_incomming_document_data);
     async function handle_incomming_document_data(document_data){
         if (!handled_data.includes(document_data)) 
         {
-            if (!cleanup_running)
-            {
-                cleanup_running = true;
-                setTimeout(run_index_cleanup, 1000); //1 second
-            }
-            if(!addresses_being_pruned.includes(document_data.address))
-            {
-                addresses_being_pruned.push(document_data.address);
-                fs.writeFile('logs/addresses_to_prune.log', addresses_being_pruned.join('\n'), "utf-8");//update log
-            }
             if (!!document_data.text_strings.length)
             {
                 document_data.proccessing_data = true;
                 handled_data.push(document_data);
                 // await write_to_file(document_data);
                 let created_documents = await divide_strings_into_documents(document_data);
-                document_data.updateId = await index.updateDocuments(created_documents);
-                // 
-                // let updateStatus = await index.getUpdateStatus(response.updateId);
-                // console.log(updateStatus);//DEBUG:
+                document_data.updateId = (await index.updateDocuments(created_documents)).updateId;
+                if(!addresses_being_pruned.includes(document_data.address))
+                {
+                    addresses_being_pruned.push(document_data.address);
+                    fs.writeFile('logs/addresses_to_prune.log', addresses_being_pruned.join('\n'), "utf-8");//update log
+                }
+                if (!cleanup_running)
+                {
+                    cleanup_running = true;
+                    setTimeout(run_index_cleanup, 1000); //1 second
+                }
                 document_data.proccessing_data = false;
             }
         }
         else 
         {
-            // if (!!document_data.updateId)
-            // {
-            //     let {status} = await index.getUpdateStatus(updateId);
-            //     if (status == 'processed')
-            //     {
+            if (!!document_data.updateId)
+            {
+                let {status} = await index.getUpdateStatus(document_data.updateId);
+                console.log(status);//DEBUG
+                // if (status == 'processed')
+                // {
 
-            //     }
-            // }
+                // }
+            }
             if (!document_data.proccessing_data)
             {
                 handled_data.splice(handled_data.indexOf(document_data),1);

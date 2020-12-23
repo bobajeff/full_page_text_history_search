@@ -15,68 +15,72 @@ function prune_index(index, address)
 {
     return new Promise(resolve=>{
         index.search("", {filters: 'address = "' + address + '"'}).catch(reason=>{}).then((search)=>{
+            //exit if no hits (address not found)
             if (!search.hits.length)
-            {//exit it address not found
+            {
                 resolve();
             }
-            var document_sets = {};
-            var ids = [];
-            var set_data = [];
-            // pull documents from meilisearch and organized them into sets
-            for (const hit of search.hits)
+            else
             {
-                if (!document_sets[hit.set_id])
+                var document_sets = {};
+                var ids = [];
+                var set_data = [];
+                // pull documents from meilisearch and organized them into sets
+                for (const hit of search.hits)
                 {
-                    document_sets[hit.set_id] = [];
+                    if (!document_sets[hit.set_id])
+                    {
+                        document_sets[hit.set_id] = [];
+                    }
+                    document_sets[hit.set_id].push(hit);
+                    ids.push(hit.id);
                 }
-                document_sets[hit.set_id].push(hit);
-                ids.push(hit.id);
-            }
-            //Get the strings and document_data for each set 
-            for (const set in document_sets)
-            {
-                var strings = get_strings_from_set(document_sets[set]);
-                var document_data = {
-                    document_type: 'removed_text',
-                    timestamp: document_sets[set][0].timestamp,
-                    set_id: document_sets[set][0].set_id,
-                    address: document_sets[set][0].address,
-                    title: document_sets[set][0].title,
-                    page: 1
-                };
-                if (!!document_sets[set][0].checked)
+                //Get the strings and document_data for each set 
+                for (const set in document_sets)
                 {
-                    document_data.checked = true;
+                    var strings = get_strings_from_set(document_sets[set]);
+                    var document_data = {
+                        document_type: 'removed_text',
+                        timestamp: document_sets[set][0].timestamp,
+                        set_id: document_sets[set][0].set_id,
+                        address: document_sets[set][0].address,
+                        title: document_sets[set][0].title,
+                        page: 1
+                    };
+                    if (!!document_sets[set][0].checked)
+                    {
+                        document_data.checked = true;
+                    }
+                    set_data.push({strings: strings, document_data: document_data});
                 }
-                set_data.push({strings: strings, document_data: document_data});
-            }
-            set_data.sort((a,b) => b.document_data.timestamp - a.document_data.timestamp); // sort set by date (decending?)
-            prune_sets(set_data).then((document_data_array)=>{
-                var documents = [];
-                let document_creation_tasks = [];
-                for (document_data of document_data_array)
-                {
-                    document_creation_tasks.push(
-                        new Promise(resolve=>{
-                            divide_strings_into_documents(document_data).then(({documents: created_documents})=>{
-                                documents = documents.concat(created_documents);
-                                resolve();
-                            });
-                        })
-                    );
-                }
-                Promise.all(document_creation_tasks).then(()=>{
-                    //update the new set to show it's been check against older sets
-                    index.deleteDocuments(ids);
-                    // console.log(documents);
-                    index.updateDocuments(documents).then(response=>{
-                        resolve();
-                        // index.getUpdateStatus(response.updateId).then(updateStatus=>{
-                        //     console.log(updateStatus); //DEBUG:
-                        // });
+                // sort set by date (decending?)
+                set_data.sort((a,b) => b.document_data.timestamp - a.document_data.timestamp); 
+                prune_sets(set_data).then((document_data_array)=>{
+                    var documents = [];
+                    let document_creation_tasks = [];
+                    for (document_data of document_data_array)
+                    {
+                        document_creation_tasks.push(
+                            new Promise(resolve=>{
+                                divide_strings_into_documents(document_data).then((created_documents)=>{
+                                    documents = documents.concat(created_documents);
+                                    resolve();
+                                });
+                            })
+                        );
+                    }
+                    Promise.all(document_creation_tasks).then(()=>{
+                        //update the new set to show it's been check against older sets
+                        index.deleteDocuments(ids);
+                        index.updateDocuments(documents).then(response=>{
+                            resolve();
+                            // index.getUpdateStatus(response.updateId).then(updateStatus=>{
+                            //     console.log(updateStatus); //DEBUG:
+                            // });
+                        });
                     });
                 });
-            });
+            }
         });
     });
 }
@@ -85,7 +89,7 @@ async function prune_sets(set_data)
 {
     return (async ()=>{
         // Go through sets and find the the sets that aren't checked
-            //If they aren't checked compare against older sets
+        //If they aren't checked compare against older sets
         // first go backwards through array
         var compare_older_set_tasks = [];
         var prune_tasks = [];
@@ -98,20 +102,35 @@ async function prune_sets(set_data)
                     {
                         //Make sure we run these in order
                         prune_tasks.push((async ()=>{
-                            var strings_to_compare_with = set.strings;
+                            var set_to_compare_with = set;
                             let loop_promises = [];
                             if (!!prune_tasks.length) //If there is a earlier prune task
                             {
                                 await prune_tasks[prune_tasks.length -1]; //Wait for the last prune task to complete first
                             }
-                            for (let set of set_data.start_at(index + 1))
+                            for (let set of set_data.start_at(index + 1)) //index + 1 so it doesn't compare with itself
                             {
                                 loop_promises.push(
                                     (async ()=>{
-                                        let pruned_strings = await prune_array_of_strings(set.strings, strings_to_compare_with);
-                                        if (!!pruned_strings.length)
+                                        //Don't campare strings if any of the comparing sets are being dicarded or if they are the same set
+                                        if (!set_to_compare_with.discard && !set.discard)
                                         {
-                                            set.strings = pruned_strings;
+                                            let [added, pruned_strings] = await prune_array_of_strings(set.strings, set_to_compare_with.strings);
+                                            if (added)
+                                            {
+                                                if (!!pruned_strings.length)
+                                                {
+                                                    set.strings = pruned_strings;
+                                                }
+                                                else //discard older set if nothing was removed (newer set has more strings)
+                                                {
+                                                    set.discard = true;
+                                                }
+                                            }
+                                            else //discard the newer set if nothing was added (this set has more strings then)
+                                            {
+                                                set_to_compare_with.discard = true;
+                                            }
                                         }
                                         return;
                                     })()
@@ -137,13 +156,13 @@ async function prune_sets(set_data)
         for (const set of set_data)
         {
             loop_promises.push((async()=>{
-                if (!!set.strings)
+                if (!set.discard)
                 {
                     set.document_data.text_strings = set.strings;
                     document_data_array.push(set.document_data);
                 }
                 return;
-            }))
+            })())
         }
         await Promise.all(loop_promises);
         return document_data_array;
@@ -173,6 +192,7 @@ function prune_array_of_strings(old_strings, new_strings)
         var previous_strings = [];
         var pruned_array_of_strings = [];
         var need_following_text = false;
+        var added = false;
         diffArrays(old_strings, new_strings, (a, diff)=>{
             // console.log(diff);
             for (const part of diff)
@@ -205,8 +225,12 @@ function prune_array_of_strings(old_strings, new_strings)
                     }
                     need_following_text = true; //Set to true so I can get the following text
                 }
+                else (part.added)
+                {
+                    added = true;
+                }
             }
-            resolve(pruned_array_of_strings);
+            resolve([added, pruned_array_of_strings]);
         });
     });
 
