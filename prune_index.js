@@ -68,11 +68,10 @@ function prune_index(index, address)
                         index.deleteDocuments(ids);
                         index.updateDocuments(documents).then(response=>{
                             resolve();
-                        //     // index.getUpdateStatus(response.updateId).then(updateStatus=>{
-                        //     //     console.log(updateStatus); //DEBUG:
-                        //     // });
+                            // index.getUpdateStatus(response.updateId).then(updateStatus=>{
+                            //     console.log(updateStatus); //DEBUG:
+                            // });
                         });
-                        console.log('finished prunning');//DEBUG:
                     });
                 });
             }
