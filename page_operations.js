@@ -15,13 +15,13 @@ export default async function (page){
       let title = await page.title();
       let set_id = await crypto.randomBytes(20).toString('base64'); //This needs to be unique per session
       var document = {
-          document_type: 'regular',
           set_id: set_id,
           timestamp: Date.now(),
           address: address,
           title: title,
           text_strings: new Array(), //hold strings to be divided among series of documents
-          page: 1
+          page: 1,
+          checked: false
       };
       
       async function updatePageData(){

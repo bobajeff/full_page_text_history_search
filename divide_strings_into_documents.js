@@ -21,6 +21,7 @@ function create_document(text, document_data)
         title: document_data.title,
         text: text,
         page: document_data.page,
+        checked: document_data.checked
     };
     documents.push(document);
 }
