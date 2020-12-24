@@ -12,7 +12,7 @@ const string_split_character = '\u{200B}'; //select text blocks with overlap mar
 function prune_index(index, address)
 {
     return new Promise(resolve=>{
-        index.search("", {filters: 'address = "' + address + '"'}).catch(reason=>{}).then((search)=>{
+        index.search("", {filters: 'address = "' + address + '"', limit: 100}).catch(reason=>{}).then((search)=>{
             //exit if no hits (address not found)
             if (!search.hits.length)//TODO: || search.hits.length == 1
             {
@@ -65,14 +65,14 @@ function prune_index(index, address)
                         );
                     }
                     Promise.all(document_creation_tasks).then(()=>{
-                        //update the new set to show it's been check against older sets
                         index.deleteDocuments(ids);
                         index.updateDocuments(documents).then(response=>{
                             resolve();
-                            // index.getUpdateStatus(response.updateId).then(updateStatus=>{
-                            //     console.log(updateStatus); //DEBUG:
-                            // });
+                        //     // index.getUpdateStatus(response.updateId).then(updateStatus=>{
+                        //     //     console.log(updateStatus); //DEBUG:
+                        //     // });
                         });
+                        console.log('finished prunning');//DEBUG:
                     });
                 });
             }
@@ -110,6 +110,7 @@ async function prune_sets(set_data)
                                         if (!set_data[index].discard && !set_data[inner_index].discard)
                                         {
                                             let [added, pruned_strings] = await prune_array_of_strings(set_data[inner_index].strings, set_data[index].strings);
+                                            // console.log(added);//DEBUG
                                             if (added)
                                             {
                                                 if (!!pruned_strings.length)
@@ -125,8 +126,12 @@ async function prune_sets(set_data)
                                             {
                                                 set_data[index].discard = true;
                                             }
+                                            return;
                                         }
-                                        return;
+                                        else
+                                        {
+                                            return;
+                                        }
                                     })(index, inner_index)
                                 );
                             }
@@ -141,14 +146,17 @@ async function prune_sets(set_data)
                         return;
                     }
                 })(index)
-            )
+            );
         }
         await Promise.all(compare_older_set_tasks);
+        await Promise.all(prune_tasks);
+        
         // Finish creating the documents_data objects return them
         let loop_promises = [];
         var document_data_array = [];
         for (var index = 0; index <= (set_data.length -1); index++)
         {
+            // console.log(set_data[index].discard);
             loop_promises.push((async(index)=>{
                 if (!set_data[index].discard)
                 {
@@ -219,7 +227,7 @@ function prune_array_of_strings(old_strings, new_strings)
                     }
                     need_following_text = true; //Set to true so I can get the following text
                 }
-                else (part.added)
+                else if (part.added)
                 {
                     added = true;
                 }

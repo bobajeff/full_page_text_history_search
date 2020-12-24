@@ -7,48 +7,50 @@ const string_overlap = 5; //How many strings to copy into the next document
 //These have to be non-normal space whitespace characters because they are the only characters which Meilisearch ignores and I don't keep in the strings from from the text extracter
 const string_split_character = '\u{200B}';//zerowidth whitespace character
 const overlap_mark_character = '\u{200A}';//hairspace whitespace character
-var documents = [];
-var previous_text_strings = [];
 
-function create_document(text, document_data)
-{
-    var document = {
-        document_type: document_data.document_type,
-        id: document_data.id_to_use,
-        set_id: document_data.set_id,
-        timestamp: document_data.timestamp,
-        address: document_data.address,
-        title: document_data.title,
-        text: text,
-        page: document_data.page,
-        checked: document_data.checked
-    };
-    documents.push(document);
-}
-
-function divide_single_string_into_documents(textString, token_count, callback)
-{
-    while (token_count > word_limit)
-    {
-        let excess_words = token_count - word_limit;
-        var tokens_and_seperators = textString.match(token_plus_seperator_regex);
-        // -1 if last index is a token | 0 if it's a seperator
-        var adjustment = (non_token_seperator_regex.test(tokens_and_seperators[tokens_and_seperators.length -1])) ? -1 : 0;
-        let amount_to_substract = (excess_words * 2) + adjustment;
-        //substract tokens
-        let tokens_and_seperators_sliced = tokens_and_seperators.slice(amount_to_substract);
-        var textString_sliced = tokens_and_seperators_sliced.join('');
-        token_count = excess_words + token_overlap; //update token count
-        //update textString for next loop
-        let overlap_tokens = tokens_and_seperators_sliced.slice(- (token_overlap * 2)); //get overlap from the sliced token
-        let remainder_tokens = tokens_and_seperators.slice(- amount_to_substract);
-        var textString = overlap_mark_character + overlap_tokens.join('') + overlap_mark_character + remainder_tokens.join('');
-        callback(textString_sliced);
-    }
-    return textString;
-}
 
 export default async function (document_data){
+    var previous_text_strings = [];
+    var documents = [];
+
+    function create_document(text, document_data)
+    {
+        var document = {
+            document_type: document_data.document_type,
+            id: document_data.id_to_use,
+            set_id: document_data.set_id,
+            timestamp: document_data.timestamp,
+            address: document_data.address,
+            title: document_data.title,
+            text: text,
+            page: document_data.page,
+            checked: document_data.checked
+        };
+        documents.push(document);
+    }
+    
+    function divide_single_string_into_documents(textString, token_count, callback)
+    {
+        while (token_count > word_limit)
+        {
+            let excess_words = token_count - word_limit;
+            var tokens_and_seperators = textString.match(token_plus_seperator_regex);
+            // -1 if last index is a token | 0 if it's a seperator
+            var adjustment = (non_token_seperator_regex.test(tokens_and_seperators[tokens_and_seperators.length -1])) ? -1 : 0;
+            let amount_to_substract = (excess_words * 2) + adjustment;
+            //substract tokens
+            let tokens_and_seperators_sliced = tokens_and_seperators.slice(amount_to_substract);
+            var textString_sliced = tokens_and_seperators_sliced.join('');
+            token_count = excess_words + token_overlap; //update token count
+            //update textString for next loop
+            let overlap_tokens = tokens_and_seperators_sliced.slice(- (token_overlap * 2)); //get overlap from the sliced token
+            let remainder_tokens = tokens_and_seperators.slice(- amount_to_substract);
+            var textString = overlap_mark_character + overlap_tokens.join('') + overlap_mark_character + remainder_tokens.join('');
+            callback(textString_sliced);
+        }
+        return textString;
+    }
+
     return new Promise(async(resolve)=>{
         var left_over_text = (!!document_data.last_document) ? document_data.last_document.text : "";
         document_data.id_to_use = (!!document_data.id_to_use) ? document_data.id_to_use : Date.now();
