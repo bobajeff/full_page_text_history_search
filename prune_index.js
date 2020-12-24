@@ -96,11 +96,11 @@ async function prune_sets(set_data)
                     if (!set_data[index].document_data.checked && index != (set_data.length -1))
                     {
                         //Make sure we run these in order
-                        prune_tasks.push((async (index)=>{
+                        prune_tasks.push((async (index, index_of_last_prune_task)=>{
                             let loop_promises = [];
                             if (!!prune_tasks.length) //If there is a earlier prune task
                             {
-                                await prune_tasks[prune_tasks.length -1]; //Wait for the last prune task to complete first
+                                await prune_tasks[index_of_last_prune_task]; //Wait for the last prune task to complete first
                             }
                             for (var inner_index = index + 1; inner_index <= (set_data.length -1); inner_index++) //index + 1 so it doesn't compare with itself
                             {
@@ -133,7 +133,7 @@ async function prune_sets(set_data)
                             await Promise.all(loop_promises);
                             set_data[index].document_data.checked = true;
                             return;
-                        })(index));
+                        })(index, prune_tasks.length -1));
                         return;
                     }
                     else
@@ -147,16 +147,16 @@ async function prune_sets(set_data)
         // Finish creating the documents_data objects return them
         let loop_promises = [];
         var document_data_array = [];
-        for (const set of set_data)
+        for (var index = 0; index <= (set_data.length -1); index++)
         {
-            loop_promises.push((async()=>{
-                if (!set.discard)
+            loop_promises.push((async(index)=>{
+                if (!set_data[index].discard)
                 {
-                    set.document_data.text_strings = set.strings;
-                    document_data_array.push(set.document_data);
+                    set_data[index].document_data.text_strings = set_data[index].strings;
+                    document_data_array.push(set_data[index].document_data);
                 }
                 return;
-            })());
+            })(index));
         }
         await Promise.all(loop_promises);
         return document_data_array;
