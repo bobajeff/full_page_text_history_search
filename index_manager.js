@@ -1,7 +1,6 @@
 import {promises as fs} from 'fs';
 import connect_to_meilisearch from './connect_to_meilisearch.js';
 import divide_strings_into_documents from './divide_strings_into_documents.js';
-import write_to_file from './write_document_objects_test_files.js'; //DEBUG:
 import prune_index from './prune_index.js';
 
 export default async function () {
