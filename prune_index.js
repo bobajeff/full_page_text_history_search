@@ -22,7 +22,6 @@ function prune_index(index, address)
             }
             else
             {
-                // console.log(hits);
                 var document_sets = {};
                 var ids = [];
                 var set_data = [];
