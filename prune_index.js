@@ -8,23 +8,26 @@ import divide_strings_into_documents from "./divide_strings_into_documents.js";
 const amount_of_strings_per_context = 5;
 const select_overlap_regex = /\u{200A}([^\u{200A}]*)\u{200A}/gu;
 const string_split_character = '\u{200B}'; //select text blocks with overlap marker (whitespace character)
+const results_limit = 100;
 
 function prune_index(index, address)
 {
     return new Promise(resolve=>{
-        index.search("", {filters: 'address = "' + address + '"', limit: 100}).catch(reason=>{}).then((search)=>{
+        // index.search("", {filters: 'address = "' + address + '"', limit: 100}).catch(reason=>{}).then((search)=>{
+        get_all_documents_with_address(index, address, 0).then(hits=>{
             //exit if no hits (address not found)
-            if (!search.hits.length)//TODO: || search.hits.length == 1
+            if (!hits.length)//TODO: || hits.length == 1 //TODO: !hits && ''
             {
                 resolve();
             }
             else
             {
+                // console.log(hits);
                 var document_sets = {};
                 var ids = [];
                 var set_data = [];
                 // pull documents from meilisearch and organized them into sets
-                for (const hit of search.hits)
+                for (const hit of hits)
                 {
                     if (!document_sets[hit.set_id])
                     {
@@ -77,6 +80,21 @@ function prune_index(index, address)
             }
         });
     });
+}
+
+async function get_all_documents_with_address(index, address, offset)
+{
+    var search = await index.search("", {filters: 'address = "' + address + '"', limit: results_limit, offset: offset}).catch(reason=>{});
+    if (!search.hits.length)
+    {
+        return;
+    }
+    else
+    {
+        var next_hits = await get_all_documents_with_address(index, address, offset+results_limit);
+        var hits = (next_hits) ? search.hits.concat(next_hits) : search.hits;
+        return hits;
+    }
 }
 
 async function prune_sets(set_data)
