@@ -7,7 +7,7 @@
     "diff": "^5.0.0",
     "hash-wasm": "^4.4.1",
     "meilisearch": "^0.16.1",
-    "puppeteer": "^5.5.0"
+    "puppeteer-core": "^5.5.0"
   },
   "type": "module",
   "devDependencies": {},

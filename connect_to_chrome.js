@@ -1,4 +1,4 @@
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-core';
 
 import getWebSocketDebuggerUrl from './getWebSocketDebuggerUrl.js';
 import runPageOperations from './page_operations.js';
