@@ -1,18 +1,13 @@
 {
-  "name": "page_indexer",
+  "name": "page_finder",
   "version": "1.0.0",
   "description": "",
   "main": "page_indexer.js",
   "dependencies": {
-    "@babel/runtime": "^7.12.5",
-    "ansi-colors-es6": "^5.0.0",
-    "colors": "^1.4.0",
     "diff": "^5.0.0",
     "hash-wasm": "^4.4.1",
-    "level-rocksdb": "^4.0.0",
     "meilisearch": "^0.16.1",
-    "puppeteer": "^5.5.0",
-    "typesense": "^0.9.1"
+    "puppeteer": "^5.5.0"
   },
   "type": "module",
   "devDependencies": {},

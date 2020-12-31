@@ -8,6 +8,7 @@ import connect_to_meilisearch from './connect_to_meilisearch.js';
   //remove this document after first run
   documents.push({
     id: Date.now(),
+    timestamp: Date.now(),
     address: "dummy_doc",
   });
 
