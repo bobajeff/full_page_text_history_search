@@ -5,9 +5,9 @@ import runPageOperations from './page_operations.js';
 
 export default async function async () {
 
-    var wsChromeEndpointurl = await getWebSocketDebuggerUrl();
+    let WSEndpointUrl = await getWebSocketDebuggerUrl();
     const browser = await puppeteer.connect({
-        browserWSEndpoint: wsChromeEndpointurl,
+        browserWSEndpoint: WSEndpointUrl,
         defaultViewport: null
     });
     

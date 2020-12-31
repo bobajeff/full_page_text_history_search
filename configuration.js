@@ -4,12 +4,6 @@ export default {
       "searchkey": "masterKey",
       "address": "127.0.0.1",
       "port": "7700"
-    },
-    "puppeteer": {
-      "wsChromeEndpointurl": ""
-    },
-    "typesense": {
-      "database": ""
     }
   }
 }

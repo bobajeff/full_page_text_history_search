@@ -43,7 +43,7 @@ export default async function() {
             console.log(err);
             if (err.toString().match(/ECONNREFUSED 127.0.0.1:9222/))
             {
-                console.log('\n\n** Looks like you forgot to run Chrome with the --remote-debugging-port=9222 flag. **');
+                console.log('\n\n** Looks like you forgot to run your Browser with the --remote-debugging-port=9222 flag. **');
             }
         } );
     });
