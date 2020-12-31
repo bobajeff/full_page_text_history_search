@@ -1,9 +1,19 @@
-import {promises as fs} from 'fs';
+import {promises as fs, constants as fs_constants} from 'fs';
 import connect_to_meilisearch from './connect_to_meilisearch.js';
 import divide_strings_into_documents from './divide_strings_into_documents.js';
 import prune_index from './prune_index.js';
+const logs_dir =  'logs';
 
 export default async function () {
+    //Create logs directory if it doesn't exist
+    fs.access(logs_dir, fs_constants.F_OK).catch(async() => {
+        await fs.mkdir(logs_dir, { recursive: true }, function(err) {
+            if (err) {
+                console.log(err)
+            }
+        });
+    });
+
     const client = await connect_to_meilisearch();
     const index = await client.getIndex('pages');
     var handled_data = [];
