@@ -32,7 +32,7 @@ export function highlightTokens(hit){
                 //begin context
                 
                 //check that there is a previous substring info entry
-                if (substrings_info.length != 0)
+                if (substrings_info.length !== 0)
                 {
                     var previous_substring_info_index = substrings_info.length -1;
                     const begin = start - context_limit;
@@ -100,10 +100,10 @@ export function highlightTokens(hit){
             {
                 //no context budget left
                 //highlighted
-                if (substrings_info.length != 0)
+                if (substrings_info.length !== 0)
                 {
                     var previous_substring_info_index = substrings_info.length -1;
-                    if (start == substrings_info[previous_substring_info_index].end)
+                    if (start === substrings_info[previous_substring_info_index].end)
                     {
                         substrings_info.push({begin: start, end: start+length, highlighted: true, end_elipses: true});
                     }
@@ -176,7 +176,7 @@ export async function LoadMoreHits()
       }
     const results = await index.search(lastsearch, searchfilter);
     offset = offset + 20;
-    if (results.hits.length != 0)
+    if (results.hits.length !== 0)
     {
         return results.hits;
     }

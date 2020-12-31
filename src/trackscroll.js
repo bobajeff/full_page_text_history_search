@@ -3,8 +3,8 @@ const TrackScroll = (props) => {
       position: 'absolute',
       width: "100%",
       height:"100%",
-      'overflow-y':'scroll',
-      'overflow-x':'hidden'
+      overflowY:'scroll',
+      overflowX:'hidden'
   };
     
      const scrollEvent = (e) => { 

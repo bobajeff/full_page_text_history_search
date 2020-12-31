@@ -38,7 +38,7 @@ function App() {
       var matches = highlightTokens(result);
 
       arrayItems.push(
-    <Box py={2} px={8}>
+    <Box py={2} px={8} key={result.id}>
       <Typography>
         {getDate(result.timestamp)}
       </Typography>

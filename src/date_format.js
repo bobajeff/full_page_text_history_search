@@ -1,6 +1,5 @@
 const lang = navigator.language;
 const full_date = new Intl.DateTimeFormat(lang, { dateStyle: 'full'}).format;
-const date_and_time = new Intl.DateTimeFormat(lang, { dateStyle: 'full', timeStyle: 'short' }).format;
 const shortTime = new Intl.DateTimeFormat(lang, {timeStyle: 'short' }).format;
 const todays_date = new Date();
 const todays_date_string = full_date(todays_date);
@@ -8,7 +7,7 @@ const todays_date_string = full_date(todays_date);
 function getDate(timestamp){
     let date = new Date(timestamp);
     let date_string = full_date(date);
-    if (todays_date_string == date_string)
+    if (todays_date_string === date_string)
     {
         return shortTime(date);
     }
