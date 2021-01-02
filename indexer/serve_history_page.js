@@ -1,6 +1,7 @@
 import {promises as fs} from 'fs';
+import configuration from './configuration.js';
 
-const host = "http://history/";
+const host = configuration.history_page_host;
 export default async function (cdp) {
     const date = new Date().toISOString();
     var responses_json = await fs.readFile('response.json', {encoding: 'utf8'}).catch(reason=>{});

@@ -1,7 +1,7 @@
 import MeiliSearch from 'meilisearch';
 import configuration from './configuration.js';
 
-const config = configuration.settings.meilisearch;
+const config = configuration.meilisearch;
 const host = "http://" + config.address + ":" + config.port;
 
 export default async function(){

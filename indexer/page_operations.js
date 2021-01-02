@@ -1,12 +1,13 @@
 import liveTextExtractor from './live_text_extractor.js';
 import crypto from 'crypto';
+import configuration from './configuration.js';
 
 const outter_func_rexp = /(^\(\) +=>{)|(^\(\)=> +{)|(^\(\) => +{)|(^\(\)=>{)|(}$)/g;
 
 /* 
 Takes and CDPSession and runs page operations with it.
  */
-const page_blacklist = ["http://localhost:3000/","chrome://new-tab-page/"]
+const page_blacklist = [configuration.history_page_host,"chrome://new-tab-page/"]
 export default async function (page){
 
     let address = await page.url();
