@@ -24,7 +24,7 @@ Haven't tested on Mac (as I don't have one) but I'm currently unaware of any iss
 
 ## About Windows
 I have not tested on Windows yet as MeiliSearch's support for it looks to still be in progress.
-Theoretically, I can work though. Though, It may not work very well.
+Theoretically, it can work. Though, It may not work very well.
 
 ## About Firefox
 The nightly release of Firefox is the only version that supports CDP-based remote debugging. For more information go here: https://firefox-source-docs.mozilla.org/remote/Usage.html
