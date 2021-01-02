@@ -1,33 +1,31 @@
 import configuration from './configuration.js';
-import responses_json from './response.js';
-const date = new Date().toISOString();
-
-async function change_date_for_response(responses_json){
-    date_operation = ()=>{};
+var responses_json = undefined;
+async function change_date_for_response(){
+    const {default: responses_js} = await import('./response.js');
+    const date = new Date().toUTCString();
+    var responses_json_ = responses_js;
     var process_date = [];
-    for (let path in responses_json)
+    for (let path in responses_json_)
     {
-        console.log(path);
         process_date.push(
             (async(path)=>{
-                responses_json[path].responseHeaders.filter((name, index) => {
-                    if (name == "Date")
+                responses_json_[path].responseHeaders.filter((obj, index) => {
+                    if (obj.name == "Date")
                     {
-                        responses_json[path].responseHeaders[index].value = date;
+                        responses_json_[path].responseHeaders[index].value = date;
                     }
                 });
             })(path)
         );
     }
     await Promise.all(process_date);
-    return responses_json;
+    
+    return responses_json_;
 }
-
-var date_operation = change_date_for_response;
 
 const host = configuration.history_page_host;
 export default async function (cdp) {
-    date_operation(responses_json);
+    responses_json = !!responses_json ? responses_json : await change_date_for_response();
     
     cdp.send('Fetch.enable', {patterns: [
         {
