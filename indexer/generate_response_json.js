@@ -71,12 +71,15 @@ const static_js_dir = 'static/js/';
       (async(filename)=>{
           const map = /\.map$/.test(filename);
           const js = /\.js$/.test(filename);
-          let path = static_js_dir + filename;
-          routes[path] = {"requestId": undefined, "responseCode": 200,};
-          routes[path].body = await fs.readFile(base_dir + path, {encoding: 'base64'}).catch(reason=>{});
           let {content_disposition, accept_ranges, etag, content_type, vary, content_encoding, date, connection, keep_alive, transfer_encoding} = createResponseHeaderTemplate();
-          content_disposition.value = 'inline; filename="' + filename + '"';
-          etag.value = await generateEtag(routes[path].body);
+          let path = static_js_dir + filename;
+          if (map || js)
+          {
+            routes[path] = {"requestId": undefined, "responseCode": 200,};
+            routes[path].body = await fs.readFile(base_dir + path, {encoding: 'base64'}).catch(reason=>{});
+            content_disposition.value = 'inline; filename="' + filename + '"';
+            etag.value = await generateEtag(routes[path].body);
+          }
           if (js) //check if file ends in .map
           {
               content_type.value = "application/javascript; charset=utf-8";
@@ -107,12 +110,15 @@ const static_css_dir = 'static/css/';
           const map = /\.map$/.test(filename);
           const css = /\.css$/.test(filename);
           let path = static_css_dir + filename;
-          routes[path] = {"requestId": undefined, "responseCode": 200};
-          routes[path].body = await fs.readFile(base_dir + path, {encoding: 'base64'}).catch(reason=>{});
           let {content_length, content_disposition, accept_ranges, etag, content_type, vary, date, connection, keep_alive} = createResponseHeaderTemplate();
-          content_length.value =  Buffer.byteLength(routes[path].body).toString();
-          content_disposition.value = 'inline; filename="' + filename + '"';
-          etag.value = await generateEtag(routes[path].body);
+          if (map || css)
+          {
+            routes[path] = {"requestId": undefined, "responseCode": 200};
+            routes[path].body = await fs.readFile(base_dir + path, {encoding: 'base64'}).catch(reason=>{});
+            content_length.value =  Buffer.byteLength(routes[path].body).toString();
+            content_disposition.value = 'inline; filename="' + filename + '"';
+            etag.value = await generateEtag(routes[path].body);
+          }
           if (css) //check if file ends in .map
           {
               //
@@ -171,7 +177,7 @@ await Promise.all(tasks);
 // var new_res = res_data.replace(/\[REPLACE_WITH_DATE_STRING\]/gm, "");
 // fs.writeFile('response.json', new_res, "utf-8");
 
-fs.writeFile('response.json', JSON.stringify(routes), "utf-8");
+fs.writeFile('response.js', 'export default ' + JSON.stringify(routes), "utf-8");
 }
 
 // export default generate_response_json;
