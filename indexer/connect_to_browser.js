@@ -2,6 +2,7 @@ import puppeteer from 'puppeteer-core';
 
 import getWebSocketDebuggerUrl from './getWebSocketDebuggerUrl.js';
 import runPageOperations from './page_operations.js';
+import serve_history_page from './serve_history_page.js';
 
 export default async function async () {
 
@@ -17,6 +18,7 @@ export default async function async () {
             let cdp = await target.createCDPSession();
             var page = await target.page();
             
+            serve_history_page(cdp);
             runPageOperations(page, cdp);
         }
     })
@@ -28,6 +30,7 @@ export default async function async () {
             let cdp = await target.createCDPSession();
             var page = await target.page();
             
+            serve_history_page(cdp);
             runPageOperations(page, cdp);
         }
     });
