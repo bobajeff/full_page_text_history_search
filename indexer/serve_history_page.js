@@ -24,7 +24,7 @@ export default async function (cdp) {
         {
             response_obj = responses_json[path];
         }
-        else if (request.url == host || request.url == "manifest.json")
+        else if (request.url == host || request.url == host + "manifest.json")
         {
             response_obj = responses_json['index.html'];
         }
