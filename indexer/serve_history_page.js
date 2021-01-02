@@ -18,7 +18,7 @@ export default async function (cdp) {
     //Send previusly retrieved data
     cdp.on('Fetch.requestPaused', async ({requestId, request, frameId, resourceType, responseErrorReason, responseStatusCode, responseHeaders, networkId})=>{
         let path = request.url.replace(host, '');
-        console.log(path);
+        console.log(path);//DEBUG
         var response_obj = undefined;
         if (!!responses_json[path])
         {
