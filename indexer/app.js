@@ -12,6 +12,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url)); //Directory containin
 class AppEmitter extends EventEmitter {}
 global.app = {};
 global.app.events = new AppEmitter();
+global.app.dirname = __dirname;
 global.app.parent_dir = __dirname + "/..";
 global.app.logs_dir = global.app.parent_dir + '/logs/';
 

@@ -10,7 +10,6 @@ npm install &&
 npm run build &&
 cd ../indexer &&
 npm install &&
-node generate_response_json.js &&
 printf "Everything is installed.\n"
 echo "Now start Chrome (or another browser with support for ChromeDevTools Protocol) with:"
 #TODO: make the debbugging port configurable from the configuration.js file

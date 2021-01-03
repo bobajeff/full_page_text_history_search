@@ -2,9 +2,11 @@ import MeiliSearch from "meilisearch";
 
 var index;
 export async function initIndex(){
+    let response = await fetch('./key.json');
+    let {apiKey} = await response.json();
     let client = new MeiliSearch({
         host: "http://127.0.0.1:7700/",
-        apiKey: "masterKey"
+        apiKey: apiKey
       });
     
     index = await client.getIndex("pages");

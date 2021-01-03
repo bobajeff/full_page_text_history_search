@@ -84,7 +84,7 @@ function prune_index(index, address)
 async function get_all_documents_with_address(index, address, offset)
 {
     var search = await index.search("", {filters: 'address = "' + address + '"', limit: results_limit, offset: offset}).catch(reason=>{});
-    if (!search.hits.length)
+    if (!search.hits.length) //Might need to prepend wih !search.hits &&
     {
         return;
     }

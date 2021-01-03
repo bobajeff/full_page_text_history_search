@@ -59,7 +59,7 @@ async function generate_response_json() {
 
 var tasks = [];
 var routes = {};
-const base_dir = '../history_page/build/';
+const base_dir = global.app.parent_dir + '/history_page/build/';
 const static_js_dir = 'static/js/';
 
 //all the js files in static directory
@@ -177,8 +177,9 @@ await Promise.all(tasks);
 // var new_res = res_data.replace(/\[REPLACE_WITH_DATE_STRING\]/gm, "");
 // fs.writeFile('response.json', new_res, "utf-8");
 
-fs.writeFile('response.js', 'export default ' + JSON.stringify(routes), "utf-8");
+await fs.writeFile(global.app.dirname + '/response.js', 'export default ' + JSON.stringify(routes), "utf-8");
+return;
 }
 
 // export default generate_response_json;
-generate_response_json();
+export {generate_response_json as default, createResponseHeaderTemplate, generateEtag}
