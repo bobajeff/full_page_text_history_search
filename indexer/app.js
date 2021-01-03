@@ -24,9 +24,13 @@ global.app.logs_dir = global.app.parent_dir + '/logs/';
             }
         });
     });
-
+    
     const meilisearch_process = spawn("./bin/meilisearch", ["--master-key=" + configuration.meilisearch.searchkey], {cwd: global.app.parent_dir});
     meilisearch_process.stdio[2].pipe(fs.createWriteStream(global.app.logs_dir + 'meiliesearch.log'));
+    //Kill meilisearch process when terminal is closed
+    function close_proccesses() { meilisearch_process.kill(); process.exit()};
+    process.on('SIGHUP', close_proccesses);
+
     connect_to_browser();
     run_index_manager();
 
