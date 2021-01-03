@@ -44,11 +44,9 @@ async function set_responses_json(){
 }
 
 async function check_for_responsejs_file(){
-    let error = await promises.access(global.app.dirname + '/response.js', constants.F_OK).catch(async()=>{
+    await promises.access(global.app.dirname + '/response.js', constants.F_OK).catch(async()=>{
         await generate_response_json();
     });
-    if (!!error){
-    }
     return true;
 }
 
