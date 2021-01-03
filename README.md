@@ -10,10 +10,6 @@ To use run your browser with remote debugging enabled. *Note: Currently, this on
   - eg. `google-chrome-stable --remote-debugging-port=9222`
   
 From the project directory run:
-the search engine server
-  - `./bin/meilisearch --master-key='masterKey'`
-  
-and the page indexer and history page server
 
   - `node ./indexer/app.js`
 

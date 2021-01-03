@@ -2,23 +2,13 @@ import {promises as fs, constants as fs_constants} from 'fs';
 import connect_to_meilisearch from './connect_to_meilisearch.js';
 import divide_strings_into_documents from './divide_strings_into_documents.js';
 import prune_index from './prune_index.js';
-const logs_dir =  'logs';
 
 export default async function () {
-    //Create logs directory if it doesn't exist
-    fs.access(logs_dir, fs_constants.F_OK).catch(async() => {
-        await fs.mkdir(logs_dir, { recursive: true }, function(err) {
-            if (err) {
-                console.log(err)
-            }
-        });
-    });
-
     const client = await connect_to_meilisearch();
     const index = await client.getIndex('pages');
     var handled_data = [];
     //Resume prunning the addresses from last time if they didn't get done
-    var logs_of_addresses_being_pruned = (await fs.readFile('logs/addresses_to_prune.log', {encoding: 'utf8'}).catch(reason=>{}));
+    var logs_of_addresses_being_pruned = (await fs.readFile(global.app.logs_dir + 'addresses_to_prune.log', {encoding: 'utf8'}).catch(reason=>{}));
     var addresses_being_pruned = [];
     // var address_to_prune_log_file = await fs.createWriteStream('logs/addresses_to_prune.log', {flags: 'w', encoding: 'utf8'});
     var cleanup_running = false;
@@ -42,7 +32,7 @@ export default async function () {
                 if(!addresses_being_pruned.includes(document_data.address))
                 {
                     addresses_being_pruned.push(document_data.address);
-                    fs.writeFile('logs/addresses_to_prune.log', addresses_being_pruned.join('\n'), "utf-8");//update log
+                    fs.writeFile(global.app.logs_dir + 'addresses_to_prune.log', addresses_being_pruned.join('\n'), "utf-8");//update log
                 }
                 if (!cleanup_running)
                 {
@@ -85,7 +75,7 @@ export default async function () {
                 }
                 await prune_index(index, addresses_being_pruned[0]);
                 addresses_being_pruned.shift();
-                fs.writeFile('logs/addresses_to_prune.log', addresses_being_pruned.join('\n'), "utf-8");//update log
+                fs.writeFile(global.app.logs_dir + 'addresses_to_prune.log', addresses_being_pruned.join('\n'), "utf-8");//update log
                 return;
             })());
         }
