@@ -1,5 +1,6 @@
 import EventEmitter from 'events';
 import connect_to_browser from './connect_to_browser.js';
+// import run_index_manager from './old_index_manager/old_index_manager.js';
 import run_index_manager from './index_manager.js';
 import configuration from './configuration.js';
 import {default as fs, promises, constants} from 'fs';
