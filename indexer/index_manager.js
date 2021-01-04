@@ -5,6 +5,8 @@ import prune_index from './prune_index.js';
 export default async function () {
     // const client = await connect_to_meilisearch();
     // const index = await client.getIndex('pages');
+    console.log('[missing op]');
+    let index;//missing op
 
     var handled_data = [];
     //Resume prunning the addresses from last time if they didn't get done

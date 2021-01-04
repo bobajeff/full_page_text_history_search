@@ -10,6 +10,8 @@ const overlap_mark_character = '\u{200A}';//hairspace whitespace character
 
 
 export default async function (document_data){
+    console.log("[don't use this]");
+    console.log('***[This function is built around limitations of meilisearch]***');
     var previous_text_strings = [];
     var documents = [];
 

@@ -12,6 +12,8 @@ const results_limit = 100;
 
 function prune_index(index, address)
 {
+    console.log("[don't use this]");
+    console.log('***[This function is built around limitations of meilisearch]***');
     return new Promise(resolve=>{
         // index.search("", {filters: 'address = "' + address + '"', limit: 100}).catch(reason=>{}).then((search)=>{
         get_all_documents_with_address(index, address, 0).then(hits=>{
