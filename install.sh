@@ -1,10 +1,11 @@
 #!/bin/sh
+#TODO: UPDATE THIS WHEN EVERYTHING IS WORKING AGAIN
 #TODO make this a npm/node script
 GREEN='\033[32m'
 DEFAULT='\033[0m'
 mkdir bin &&
 cd bin &&
-curl -L https://install.meilisearch.com | sh &&
+#[install tantivy here]
 cd ../history_page &&
 npm install && 
 npm run build &&

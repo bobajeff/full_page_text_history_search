@@ -1,3 +1,5 @@
+# TODO: UPDATE THIS WHEN EVERYTHING IS WORKING AGAIN
+
 # Full page text history search
 A utility to do full page text search of any page you've visited.
 
@@ -19,8 +21,7 @@ Once started you should be able to search your history by opening http://history
 Haven't tested on Mac (as I don't have one) but I'm currently unaware of any issue preventing it from working.
 
 ## About Windows
-I have not tested on Windows yet as MeiliSearch's support for it looks to still be in progress.
-Theoretically, it can work. Though, It may not work very well.
+TODO: look into windows support when everything works again
 
 ## About Firefox
 The nightly release of Firefox is the only version that supports CDP-based remote debugging. For more information go here: https://firefox-source-docs.mozilla.org/remote/Usage.html
