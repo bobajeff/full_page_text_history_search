@@ -67,13 +67,14 @@ function prune_index(index, address)
                         );
                     }
                     Promise.all(document_creation_tasks).then(()=>{
-                        index.deleteDocuments(ids);
-                        index.updateDocuments(documents).then(response=>{
-                            resolve();
-                            // index.getUpdateStatus(response.updateId).then(updateStatus=>{
-                            //     console.log(updateStatus); //DEBUG:
-                            // });
-                        });
+                        console.log('[no op]');
+                        // index.deleteDocuments(ids);
+                        // index.updateDocuments(documents).then(response=>{
+                        //     resolve();
+                        //     // index.getUpdateStatus(response.updateId).then(updateStatus=>{
+                        //     //     console.log(updateStatus); //DEBUG:
+                        //     // });
+                        // });
                     });
                 });
             }
@@ -83,17 +84,21 @@ function prune_index(index, address)
 
 async function get_all_documents_with_address(index, address, offset)
 {
-    var search = await index.search("", {filters: 'address = "' + address + '"', limit: results_limit, offset: offset}).catch(reason=>{});
-    if (!search.hits && !search.hits.length)
-    {
-        return;
-    }
-    else
-    {
-        var next_hits = await get_all_documents_with_address(index, address, offset+results_limit);
-        var hits = (next_hits) ? search.hits.concat(next_hits) : search.hits;
-        return hits;
-    }
+    let hits = [];//missing op
+    console.log('[no op]');
+    return hits;
+
+    // var search = await index.search("", {filters: 'address = "' + address + '"', limit: results_limit, offset: offset}).catch(reason=>{});
+    // if (!search.hits && !search.hits.length)
+    // {
+    //     return;
+    // }
+    // else
+    // {
+    //     var next_hits = await get_all_documents_with_address(index, address, offset+results_limit);
+    //     var hits = (next_hits) ? search.hits.concat(next_hits) : search.hits;
+    //     return hits;
+    // }
 }
 
 async function prune_sets(set_data)

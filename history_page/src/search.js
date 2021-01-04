@@ -1,15 +1,14 @@
-import MeiliSearch from "meilisearch";
-
 var index;
 export async function initIndex(){
-    let response = await fetch('./key.json');
-    let {apiKey} = await response.json();
-    let client = new MeiliSearch({
-        host: "http://127.0.0.1:7700/",
-        apiKey: apiKey
-      });
+    console.log('[no op]');
+    // let response = await fetch('./key.json');
+    // let {apiKey} = await response.json();
+    // let client = new MeiliSearch({
+    //     host: "http://127.0.0.1:7700/",
+    //     apiKey: apiKey
+    //   });
     
-    index = await client.getIndex("pages");
+    // index = await client.getIndex("pages");
 }
 
 var lastsearch = "";
@@ -157,11 +156,13 @@ async function Search(searchtext){
     async function searchWithMeili(searchtext) {
         offset = 0;
         lastsearch = searchtext;
-        var searchfilter = {
-          matches: true
-        }
-      const search = await index.search(searchtext, searchfilter);
-        return search.hits;
+        // var searchfilter = {
+        //   matches: true
+        // }
+        let hits = [];//missing op
+        console.log('[missing op]');
+    //   const search = await index.search(searchtext, searchfilter);
+        return hits;
     }
     let results = await searchWithMeili(searchtext);
     
@@ -172,15 +173,17 @@ async function Search(searchtext){
 
 export async function LoadMoreHits()
 {
-    var searchfilter = {
-        matches: true,
-        offset: offset
-      }
-    const results = await index.search(lastsearch, searchfilter);
+    // var searchfilter = {
+    //     matches: true,
+    //     offset: offset
+    //   }
+    let hits = []; //missing op
+      console.log('[missing op]');
+    // const results = await index.search(lastsearch, searchfilter);
     offset = offset + 20;
-    if (results.hits.length !== 0)
+    if (hits.length !== 0)
     {
-        return results.hits;
+        return hits;
     }
     else
     {
